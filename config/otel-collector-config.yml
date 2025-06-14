@@ -1,4 +1,4 @@
-# Configuração do OTel Collector
+# Configuração do OTel Collector com suporte a SPM
 
 receivers:
   otlp: # Habilita o receptor OTLP
@@ -8,15 +8,41 @@ receivers:
 
 processors:
   batch:
+  # Processador para gerar métricas de performance dos serviços
+  spanmetrics:
+    metrics_exporter: prometheus
+    latency_histogram_buckets:
+      [
+        2ms,
+        4ms,
+        6ms,
+        8ms,
+        10ms,
+        50ms,
+        100ms,
+        200ms,
+        400ms,
+        800ms,
+        1s,
+        1400ms,
+        2s,
+        5s,
+        10s,
+        15s,
+      ]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.route
 
 exporters:
   # Exportador para o Jaeger (Traces) via OTLP
   otlp/jaeger:
-    endpoint: jaeger:14250
+    endpoint: 172.19.0.7:4319
     tls:
       insecure: true
 
-  # Exportador para o Prometheus (Métricas)
+  # Exportador para o Prometheus (Métricas + SPM)
   prometheus:
     endpoint: "0.0.0.0:8889"
 
@@ -24,7 +50,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [spanmetrics, batch]
       exporters: [otlp/jaeger]
     metrics:
       receivers: [otlp]

@@ -1,0 +1,312 @@
+{
+    "dashboard": {
+        "id": null,
+        "title": "Fintelli SPM - Service Performance Monitoring",
+        "tags": [
+            "fintelli",
+            "spm",
+            "performance",
+            "fintech"
+        ],
+        "timezone": "browser",
+        "panels": [
+            {
+                "id": 1,
+                "title": "Taxa de Transações (TPS)",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "rate(calls_total{operation=~'/api/transactions.*'}[5m])",
+                        "legendFormat": "TPS"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "thresholds": {
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 50
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 100
+                                }
+                            ]
+                        },
+                        "unit": "reqps"
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 6,
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            {
+                "id": 2,
+                "title": "Latência P95 de Transações",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, rate(duration_bucket{operation=~'/api/transactions.*'}[5m]))",
+                        "legendFormat": "P95 Latency"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "thresholds": {
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 0.3
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 0.5
+                                }
+                            ]
+                        },
+                        "unit": "s"
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 6,
+                    "x": 6,
+                    "y": 0
+                }
+            },
+            {
+                "id": 3,
+                "title": "Taxa de Erro",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "rate(calls_total{operation=~'/api/transactions.*',status_code=~'5..'}[5m]) / rate(calls_total{operation=~'/api/transactions.*'}[5m]) * 100",
+                        "legendFormat": "Error Rate"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "thresholds": {
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 0.5
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 1
+                                }
+                            ]
+                        },
+                        "unit": "percent"
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 6,
+                    "x": 12,
+                    "y": 0
+                }
+            },
+            {
+                "id": 4,
+                "title": "Disponibilidade do Serviço",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "(1 - (rate(calls_total{service_name='fintelli-backend',status_code=~'5..'}[5m]) / rate(calls_total{service_name='fintelli-backend'}[5m]))) * 100",
+                        "legendFormat": "Uptime"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "thresholds": {
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 99
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 99.9
+                                }
+                            ]
+                        },
+                        "unit": "percent",
+                        "min": 99,
+                        "max": 100
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 6,
+                    "x": 18,
+                    "y": 0
+                }
+            },
+            {
+                "id": 5,
+                "title": "Latência por Endpoint ao Longo do Tempo",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.50, rate(duration_bucket{service_name='fintelli-backend'}[5m]))",
+                        "legendFormat": "P50 {{operation}}"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.95, rate(duration_bucket{service_name='fintelli-backend'}[5m]))",
+                        "legendFormat": "P95 {{operation}}"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.99, rate(duration_bucket{service_name='fintelli-backend'}[5m]))",
+                        "legendFormat": "P99 {{operation}}"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "unit": "s",
+                        "min": 0
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 8
+                }
+            },
+            {
+                "id": 6,
+                "title": "Throughput por Endpoint",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "rate(calls_total{service_name='fintelli-backend'}[5m])",
+                        "legendFormat": "{{operation}} ({{http_method}})"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "unit": "reqps",
+                        "min": 0
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 8
+                }
+            },
+            {
+                "id": 7,
+                "title": "Performance de Dependências (Database & Cache)",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, rate(duration_bucket{operation=~'.*sql.*|.*postgres.*'}[5m]))",
+                        "legendFormat": "PostgreSQL P95"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.95, rate(duration_bucket{operation=~'.*redis.*|.*cache.*'}[5m]))",
+                        "legendFormat": "Redis P95"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "unit": "s",
+                        "min": 0
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 16
+                }
+            },
+            {
+                "id": 8,
+                "title": "Distribuição de Status HTTP",
+                "type": "piechart",
+                "targets": [
+                    {
+                        "expr": "rate(calls_total{service_name='fintelli-backend'}[5m])",
+                        "legendFormat": "{{status_code}}"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "unit": "reqps"
+                    }
+                },
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 16
+                }
+            }
+        ],
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        },
+        "refresh": "5s",
+        "annotations": {
+            "list": [
+                {
+                    "name": "Deployments",
+                    "datasource": "-- Grafana --",
+                    "type": "logs",
+                    "enable": true,
+                    "iconColor": "rgba(0, 211, 255, 1)"
+                }
+            ]
+        }
+    }
+}

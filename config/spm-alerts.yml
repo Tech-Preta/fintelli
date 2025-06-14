@@ -1,0 +1,335 @@
+# Alertas SPM (Service Performance Monitoring) para Fintelli
+# Arquivo: config/spm-alerts.yml
+
+groups:
+  - name: fintelli-spm-alerts
+    rules:
+      # ========================================
+      # ALERTAS DE LATÊNCIA
+      # ========================================
+
+      - alert: HighTransactionLatencyP95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(duration_bucket{operation=~"/api/transactions.*"}[5m])
+          ) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: latency
+          sla_impact: high
+        annotations:
+          summary: "Latência alta em transações (P95)"
+          description: |
+            A latência P95 das transações está em {{ $value | humanizeDuration }}, 
+            acima do threshold de 500ms. Isso pode impactar a experiência do usuário.
+
+            Ações recomendadas:
+            - Verificar performance do PostgreSQL
+            - Analisar queries lentas
+            - Verificar utilização de CPU/memória
+          runbook_url: "https://wiki.fintelli.com/runbooks/high-latency"
+          dashboard_url: "http://localhost:3000/d/fintelli-spm"
+
+      - alert: CriticalTransactionLatencyP95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(duration_bucket{operation=~"/api/transactions.*"}[5m])
+          ) > 1.0
+        for: 1m
+        labels:
+          severity: critical
+          service: fintelli-backend
+          category: latency
+          sla_impact: critical
+        annotations:
+          summary: "Latência CRÍTICA em transações (P95 > 1s)"
+          description: |
+            🚨 ALERTA CRÍTICO: Latência P95 das transações é {{ $value | humanizeDuration }}.
+            Sistema pode estar indisponível para usuários.
+
+            Ações URGENTES:
+            - Verificar se sistema precisa de restart
+            - Escalar recursos imediatamente
+            - Ativar procedimento de emergência
+          runbook_url: "https://wiki.fintelli.com/runbooks/critical-latency"
+
+      # ========================================
+      # ALERTAS DE TAXA DE ERRO
+      # ========================================
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(calls_total{service_name="fintelli-backend",status_code=~"5.."}[5m]) /
+            rate(calls_total{service_name="fintelli-backend"}[5m])
+          ) * 100 > 1
+        for: 1m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: errors
+          sla_impact: high
+        annotations:
+          summary: "Taxa de erro elevada ({{ $value | humanizePercentage }})"
+          description: |
+            A taxa de erro do backend está em {{ $value | humanizePercentage }}, 
+            acima do threshold de 1%.
+
+            Ações recomendadas:
+            - Verificar logs de erro recentes
+            - Investigar mudanças de código recentes
+            - Verificar integrações externas
+
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            rate(calls_total{service_name="fintelli-backend",status_code=~"5.."}[5m]) /
+            rate(calls_total{service_name="fintelli-backend"}[5m])
+          ) * 100 > 5
+        for: 30s
+        labels:
+          severity: critical
+          service: fintelli-backend
+          category: errors
+          sla_impact: critical
+        annotations:
+          summary: "Taxa de erro CRÍTICA ({{ $value | humanizePercentage }})"
+          description: |
+            🚨 ALERTA CRÍTICO: Taxa de erro em {{ $value | humanizePercentage }}.
+            Múltiplas falhas detectadas.
+
+            Ações URGENTES:
+            - Considerar rollback do último deploy
+            - Ativar procedimento de incident response
+            - Comunicar stakeholders
+
+      # ========================================
+      # ALERTAS DE DISPONIBILIDADE
+      # ========================================
+
+      - alert: LowServiceAvailability
+        expr: |
+          (
+            1 - (
+              rate(calls_total{service_name="fintelli-backend",status_code=~"5.."}[5m]) /
+              rate(calls_total{service_name="fintelli-backend"}[5m])
+            )
+          ) * 100 < 99.9
+        for: 5m
+        labels:
+          severity: critical
+          service: fintelli-backend
+          category: availability
+          sla_impact: critical
+        annotations:
+          summary: "Disponibilidade abaixo do SLA ({{ $value | humanizePercentage }})"
+          description: |
+            🚨 SLA VIOLADO: Disponibilidade do serviço está em {{ $value | humanizePercentage }}, 
+            abaixo do SLA de 99.9%.
+
+            Ações URGENTES:
+            - Ativar equipe de plantão
+            - Investigar causa raiz
+            - Preparar relatório de incident
+
+      # ========================================
+      # ALERTAS DE THROUGHPUT
+      # ========================================
+
+      - alert: LowThroughput
+        expr: |
+          rate(calls_total{service_name="fintelli-backend"}[5m]) < 10
+        for: 5m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: throughput
+          sla_impact: medium
+        annotations:
+          summary: "Throughput baixo ({{ $value | humanize }} req/s)"
+          description: |
+            O throughput do sistema está em {{ $value | humanize }} req/s, 
+            abaixo do esperado (>10 req/s).
+
+            Possíveis causas:
+            - Redução no tráfego de usuários
+            - Problemas de conectividade
+            - Gargalos de performance
+
+      - alert: ZeroThroughput
+        expr: |
+          rate(calls_total{service_name="fintelli-backend"}[5m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: fintelli-backend
+          category: throughput
+          sla_impact: critical
+        annotations:
+          summary: "Sistema sem tráfego - Possível indisponibilidade"
+          description: |
+            🚨 ALERTA CRÍTICO: Nenhuma requisição detectada nos últimos 2 minutos.
+            Sistema pode estar completamente indisponível.
+
+            Ações URGENTES:
+            - Verificar se serviços estão rodando
+            - Testar conectividade
+            - Verificar load balancer/proxy
+
+      # ========================================
+      # ALERTAS DE DEPENDÊNCIAS
+      # ========================================
+
+      - alert: DatabaseHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(duration_bucket{operation=~".*sql.*|.*postgres.*"}[5m])
+          ) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: postgres
+          category: database
+          sla_impact: high
+        annotations:
+          summary: "Latência alta no PostgreSQL ({{ $value | humanizeDuration }})"
+          description: |
+            A latência P95 do PostgreSQL está em {{ $value | humanizeDuration }}.
+
+            Ações recomendadas:
+            - Verificar queries lentas
+            - Analisar utilização de recursos do DB
+            - Considerar otimização de índices
+
+      - alert: CacheHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(duration_bucket{operation=~".*redis.*|.*cache.*"}[5m])
+          ) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+          service: redis
+          category: cache
+          sla_impact: medium
+        annotations:
+          summary: "Latência alta no Redis ({{ $value | humanizeDuration }})"
+          description: |
+            A latência P95 do Redis está em {{ $value | humanizeDuration }}.
+            Redis geralmente deve responder em < 10ms.
+
+            Ações recomendadas:
+            - Verificar utilização de memória do Redis
+            - Analisar comandos lentos
+            - Verificar configuração de persistência
+
+      # ========================================
+      # ALERTAS DE TENDÊNCIA
+      # ========================================
+
+      - alert: LatencyTrendIncreasing
+        expr: |
+          (
+            histogram_quantile(0.95, rate(duration_bucket{service_name="fintelli-backend"}[5m])) -
+            histogram_quantile(0.95, rate(duration_bucket{service_name="fintelli-backend"}[5m] offset 15m))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: trend
+          sla_impact: medium
+        annotations:
+          summary: "Tendência de aumento na latência detectada"
+          description: |
+            A latência P95 aumentou {{ $value | humanizeDuration }} nos últimos 15 minutos.
+            Tendência crescente pode indicar degradação gradual.
+
+            Ações preventivas:
+            - Monitorar de perto
+            - Investigar causas potenciais
+            - Preparar plano de contingência
+
+      - alert: ThroughputTrendDecreasing
+        expr: |
+          (
+            rate(calls_total{service_name="fintelli-backend"}[5m]) -
+            rate(calls_total{service_name="fintelli-backend"}[5m] offset 15m)
+          ) < -10
+        for: 5m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: trend
+          sla_impact: medium
+        annotations:
+          summary: "Tendência de queda no throughput detectada"
+          description: |
+            O throughput diminuiu {{ $value | humanize }} req/s nos últimos 15 minutos.
+
+            Possíveis causas:
+            - Problemas de performance emergentes
+            - Redução natural no tráfego
+            - Problemas de conectividade
+
+      # ========================================
+      # ALERTAS DE ANOMALIA
+      # ========================================
+
+      - alert: UnusuallyHighRequestVolume
+        expr: |
+          rate(calls_total{service_name="fintelli-backend"}[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: anomaly
+          sla_impact: medium
+        annotations:
+          summary: "Volume de requisições unusualmente alto ({{ $value | humanize }} req/s)"
+          description: |
+            Volume de requisições ({{ $value | humanize }} req/s) está acima do normal.
+
+            Possíveis causas:
+            - Pico de tráfego legítimo
+            - Possível ataque DDoS
+            - Bot ou scraping automatizado
+
+            Ações recomendadas:
+            - Verificar logs de acesso
+            - Monitorar recursos do sistema
+            - Considerar rate limiting
+
+  # ========================================
+  # RECORDING RULES PARA OTIMIZAÇÃO
+  # ========================================
+  - name: fintelli-spm-recording-rules
+    rules:
+      # Métricas agregadas para dashboards mais rápidos
+      - record: fintelli:sla_availability_5m
+        expr: |
+          (
+            1 - (
+              rate(calls_total{service_name="fintelli-backend",status_code=~"5.."}[5m]) /
+              rate(calls_total{service_name="fintelli-backend"}[5m])
+            )
+          ) * 100
+
+      - record: fintelli:latency_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            rate(duration_bucket{service_name="fintelli-backend"}[5m])
+          )
+
+      - record: fintelli:error_rate_5m
+        expr: |
+          (
+            rate(calls_total{service_name="fintelli-backend",status_code=~"5.."}[5m]) /
+            rate(calls_total{service_name="fintelli-backend"}[5m])
+          ) * 100
+
+      - record: fintelli:throughput_5m
+        expr: |
+          rate(calls_total{service_name="fintelli-backend"}[5m])

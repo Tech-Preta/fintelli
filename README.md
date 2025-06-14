@@ -48,7 +48,10 @@ graph TD
     Backend -.->|Traces & Metrics| OTel
     OTel -->|Export Traces| Jaeger
     OTel -->|Export Metrics| Prometheus
-    Grafana -->|Query| Prometheus
+    
+    %% SPM Flow (Service Performance Monitoring)
+    OTel -.->|SpanMetrics| Prometheus
+    Prometheus -->|SPM Queries| Grafana
 
     %% High Contrast Styles
     classDef userStyle fill:#ffffff,stroke:#000000,stroke-width:3px,color:#000000
@@ -161,6 +164,34 @@ Adicione e remova algumas transações para gerar dados.
 2. Vá em "Connections" > "Data sources" e adicione o Prometheus (URL: `http://prometheus:9090`)
 3. Vá em "Dashboards" > "New dashboard" para criar painéis com as métricas disponíveis
    - Exemplos: `http_server_duration_seconds`, `transactions_created_total`
+
+## 🎯 Service Performance Monitoring (SPM)
+
+O Fintelli agora possui **Service Performance Monitoring (SPM)** habilitado, que deriva automaticamente métricas de performance dos traces distribuídos coletados pelo OpenTelemetry.
+
+### 🚀 Benefícios do SPM
+
+- **📊 Métricas Automáticas**: Rate, Errors, Duration (RED) geradas dos traces
+- **🔍 Visibilidade Completa**: Performance por endpoint, método HTTP e status
+- **⚡ Alertas Inteligentes**: Detecção proativa de degradação de performance
+- **🎨 Dashboards Ricos**: Visualizações automáticas no Grafana
+- **🛡️ SLA Monitoring**: Monitoramento contínuo de disponibilidade e latência
+
+### 📈 Métricas SPM Disponíveis
+
+```promql
+# Taxa de requisições por segundo
+rate(calls_total{service_name="fintelli-backend"}[5m])
+
+# Latência P95
+histogram_quantile(0.95, rate(duration_bucket{service_name="fintelli-backend"}[5m]))
+
+# Taxa de erro
+rate(calls_total{status_code=~"5.."}[5m]) / rate(calls_total[5m])
+
+# Disponibilidade do serviço
+(1 - rate(calls_total{status_code=~"5.."}[5m]) / rate(calls_total[5m])) * 100
+```
 
 ## 🛠️ Tecnologias Utilizadas
 

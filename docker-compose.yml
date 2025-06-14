@@ -1,7 +1,27 @@
 services:
   # Serviço de Backend (API com FastAPI)
   backend:
-    build: ./src/backend
+  # 2. Jaeger para Traces com SPM habilitado
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: fintelli_jaeger
+    environment:
+      # Configurações básicas do Jaeger
+      - JAEGER_DISABLED=false
+      - COLLECTOR_OTLP_ENABLED=true
+      # Habilita endpoint de métricas administrativas
+      - JAEGER_ADMIN_HTTP_HOST_PORT=:14269
+      # Configurações de storage
+      - SPAN_STORAGE_TYPE=memory
+      # Configuração OTLP para usar porta diferente
+      - COLLECTOR_OTLP_GRPC_HOST_PORT=:4319
+    ports:
+      - "16687:16686" # UI do Jaeger
+      - "14251:14250" # Coleta de traces
+      - "14269:14269" # Admin port para métricas
+      - "4319:4319"   # OTLP gRPC para traces
+    depends_on:
+      - otel-collectorckend
     container_name: fintelli_backend
     env_file:
       - ./.env
@@ -58,15 +78,29 @@ services:
     ports:
       - "4317:4317"  # OTLP gRPC
       - "4318:4318"  # OTLP HTTP
-      - "8888:8889"  # Prometheus exporter
+      - "8888:8889"  # Prometheus exporter (SPM incluído)
 
-  # 2. Jaeger para Traces
+  # 2. Jaeger para Traces com SPM habilitado
   jaeger:
-    image: jaegertracing/all-in-one:1.38
+    image: jaegertracing/all-in-one:1.51
     container_name: fintelli_jaeger
+    environment:
+      # Configurações básicas do Jaeger
+      - JAEGER_DISABLED=false
+      - COLLECTOR_OTLP_ENABLED=true
+      # Habilita endpoint de métricas administrativas
+      - JAEGER_ADMIN_HTTP_HOST_PORT=:14269
+      # Configurações de storage
+      - SPAN_STORAGE_TYPE=memory
+      # Configuração OTLP para usar porta diferente
+      - COLLECTOR_OTLP_GRPC_HOST_PORT=:4319
     ports:
       - "16687:16686" # UI do Jaeger
       - "14251:14250" # Coleta de traces
+      - "14269:14269" # Admin port para métricas
+      - "4319:4319"   # OTLP gRPC para traces
+    depends_on:
+      - otel-collector
 
   # 3. Prometheus para Métricas
   prometheus:
@@ -74,8 +108,13 @@ services:
     container_name: fintelli_prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/spm-alerts.yml:/etc/prometheus/spm-alerts.yml
     ports:
       - "9091:9090"
 
@@ -84,7 +123,7 @@ services:
     image: grafana/grafana:9.1.0
     container_name: fintelli_grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"  # Mudando para porta 3001 para evitar conflitos
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:

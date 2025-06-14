@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import psycopg2
 import psycopg2.extras
 import redis
@@ -11,7 +12,12 @@ from typing import List, Optional
 from dotenv import load_dotenv
 
 # Importa a configuração de instrumentação e métricas customizadas
-from instrumentation import setup_opentelemetry, transactions_created_counter
+from instrumentation import (
+    setup_opentelemetry, tracer,
+    transactions_created_counter, transactions_deleted_counter, 
+    api_requests_counter, transaction_amount_histogram,
+    database_query_duration, active_connections_gauge
+)
 
 load_dotenv()
 
@@ -29,13 +35,24 @@ app.add_middleware(
 )
 redis_client = redis.Redis(host='cache', port=6379, db=0, decode_responses=True)
 def get_db_connection():
-    conn = psycopg2.connect(
-        dbname=os.getenv("POSTGRES_DB"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        host="db"
-    )
-    return conn
+    with tracer.start_as_current_span("database.connect") as span:
+        active_connections_gauge.add(1)
+        span.set_attribute("db.system", "postgresql")
+        span.set_attribute("db.name", os.getenv("POSTGRES_DB"))
+        try:
+            conn = psycopg2.connect(
+                dbname=os.getenv("POSTGRES_DB"),
+                user=os.getenv("POSTGRES_USER"),
+                password=os.getenv("POSTGRES_PASSWORD"),
+                host="db"
+            )
+            span.set_attribute("db.connection.status", "success")
+            return conn
+        except Exception as e:
+            span.set_attribute("db.connection.status", "error")
+            span.record_exception(e)
+            active_connections_gauge.add(-1)
+            raise
 @app.on_event("startup")
 def on_startup():
     # Cria as tabelas no DB se não existirem
@@ -61,73 +78,202 @@ class FixedExpense(BaseModel):
 
 # --- Funções de Cache ---
 def invalidate_summary_cache():
-    redis_client.delete("financial_summary")
+    with tracer.start_as_current_span("cache.invalidate") as span:
+        span.set_attribute("cache.key", "financial_summary")
+        redis_client.delete("financial_summary")
+        span.set_attribute("cache.operation", "delete")
 
 # --- Rotas da API ---
 
 @app.get("/api/summary")
 def get_summary():
-    cached_summary = redis_client.get("financial_summary")
-    if cached_summary: return json.loads(cached_summary)
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT amount FROM transactions")
-    transactions = cur.fetchall()
-    cur.close()
-    conn.close()
-    income = sum(float(row['amount']) for row in transactions if row['amount'] > 0)
-    expense = sum(float(row['amount']) for row in transactions if row['amount'] < 0)
-    summary = {"income": income, "expense": expense, "balance": income + expense}
-    redis_client.set("financial_summary", json.dumps(summary), ex=3600)
-    return summary
+    with tracer.start_as_current_span("api.get_summary") as span:
+        api_requests_counter.add(1, {"endpoint": "/api/summary", "method": "GET"})
+        
+        # Tenta buscar no cache
+        with tracer.start_as_current_span("cache.get") as cache_span:
+            cache_span.set_attribute("cache.key", "financial_summary")
+            cached_summary = redis_client.get("financial_summary")
+            if cached_summary:
+                cache_span.set_attribute("cache.hit", True)
+                span.set_attribute("summary.source", "cache")
+                return json.loads(cached_summary)
+            cache_span.set_attribute("cache.hit", False)
+        
+        # Busca no banco de dados
+        span.set_attribute("summary.source", "database")
+        start_time = time.time()
+        
+        with tracer.start_as_current_span("database.query.summary") as db_span:
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            db_span.set_attribute("db.operation", "SELECT")
+            db_span.set_attribute("db.table", "transactions")
+            
+            cur.execute("SELECT amount FROM transactions")
+            transactions = cur.fetchall()
+            cur.close()
+            conn.close()
+            active_connections_gauge.add(-1)
+            
+            query_duration = time.time() - start_time
+            database_query_duration.record(query_duration, {"operation": "get_summary"})
+            db_span.set_attribute("db.rows_returned", len(transactions))
+        
+        # Calcula resumo
+        with tracer.start_as_current_span("business.calculate_summary") as calc_span:
+            income = sum(float(row['amount']) for row in transactions if row['amount'] > 0)
+            expense = sum(float(row['amount']) for row in transactions if row['amount'] < 0)
+            summary = {"income": income, "expense": expense, "balance": income + expense}
+            
+            calc_span.set_attribute("summary.income", income)
+            calc_span.set_attribute("summary.expense", expense)
+            calc_span.set_attribute("summary.balance", income + expense)
+            calc_span.set_attribute("summary.transactions_count", len(transactions))
+        
+        # Salva no cache
+        with tracer.start_as_current_span("cache.set") as cache_span:
+            cache_span.set_attribute("cache.key", "financial_summary")
+            cache_span.set_attribute("cache.ttl", 3600)
+            redis_client.set("financial_summary", json.dumps(summary), ex=3600)
+        
+        return summary
 
 @app.get("/api/transactions", response_model=List[Transaction])
 def get_transactions():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT id, description, amount, to_char(transaction_date, 'YYYY-MM-DD') as transaction_date FROM transactions ORDER BY transaction_date DESC, id DESC")
-    transactions = cur.fetchall()
-    cur.close()
-    conn.close()
-    return [dict(row) for row in transactions]
+    with tracer.start_as_current_span("api.get_transactions") as span:
+        api_requests_counter.add(1, {"endpoint": "/api/transactions", "method": "GET"})
+        
+        start_time = time.time()
+        
+        with tracer.start_as_current_span("database.query.transactions") as db_span:
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            db_span.set_attribute("db.operation", "SELECT")
+            db_span.set_attribute("db.table", "transactions")
+            
+            cur.execute("SELECT id, description, amount, to_char(transaction_date, 'YYYY-MM-DD') as transaction_date FROM transactions ORDER BY transaction_date DESC, id DESC")
+            transactions = cur.fetchall()
+            cur.close()
+            conn.close()
+            active_connections_gauge.add(-1)
+            
+            query_duration = time.time() - start_time
+            database_query_duration.record(query_duration, {"operation": "get_transactions"})
+            db_span.set_attribute("db.rows_returned", len(transactions))
+            span.set_attribute("transactions.count", len(transactions))
+        
+        return [dict(row) for row in transactions]
 
 @app.post("/api/transactions", response_model=Transaction, status_code=201)
 def add_transaction(transaction: Transaction):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("INSERT INTO transactions (description, amount, transaction_date) VALUES (%s, %s, %s) RETURNING id", (transaction.description, transaction.amount, transaction.transaction_date))
-    new_id = cur.fetchone()['id']
-    conn.commit()
-    cur.close()
-    conn.close()
-    invalidate_summary_cache()
-    transaction.id = new_id
-    
-    # Incrementa a métrica customizada
-    transactions_created_counter.add(1)
-    
-    return transaction
+    with tracer.start_as_current_span("api.add_transaction") as span:
+        api_requests_counter.add(1, {"endpoint": "/api/transactions", "method": "POST"})
+        span.set_attribute("transaction.description", transaction.description)
+        span.set_attribute("transaction.amount", transaction.amount)
+        span.set_attribute("transaction.date", transaction.transaction_date)
+        
+        # Registra métricas do valor da transação
+        transaction_amount_histogram.record(
+            abs(transaction.amount), 
+            {"type": "income" if transaction.amount > 0 else "expense"}
+        )
+        
+        start_time = time.time()
+        
+        with tracer.start_as_current_span("database.insert.transaction") as db_span:
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            db_span.set_attribute("db.operation", "INSERT")
+            db_span.set_attribute("db.table", "transactions")
+            
+            cur.execute(
+                "INSERT INTO transactions (description, amount, transaction_date) VALUES (%s, %s, %s) RETURNING id", 
+                (transaction.description, transaction.amount, transaction.transaction_date)
+            )
+            new_id = cur.fetchone()['id']
+            conn.commit()
+            cur.close()
+            conn.close()
+            active_connections_gauge.add(-1)
+            
+            query_duration = time.time() - start_time
+            database_query_duration.record(query_duration, {"operation": "insert_transaction"})
+            db_span.set_attribute("db.new_id", new_id)
+        
+        # Invalida cache
+        invalidate_summary_cache()
+        transaction.id = new_id
+        
+        # Incrementa a métrica customizada
+        transactions_created_counter.add(1, {
+            "type": "income" if transaction.amount > 0 else "expense"
+        })
+        
+        span.set_attribute("transaction.id", new_id)
+        span.set_attribute("operation.success", True)
+        
+        return transaction
 
 @app.delete("/api/transactions/{transaction_id}", status_code=204)
 def delete_transaction(transaction_id: int):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM transactions WHERE id = %s", (transaction_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    invalidate_summary_cache()
-    return {}
+    with tracer.start_as_current_span("api.delete_transaction") as span:
+        api_requests_counter.add(1, {"endpoint": "/api/transactions", "method": "DELETE"})
+        span.set_attribute("transaction.id", transaction_id)
+        
+        start_time = time.time()
+        
+        with tracer.start_as_current_span("database.delete.transaction") as db_span:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            db_span.set_attribute("db.operation", "DELETE")
+            db_span.set_attribute("db.table", "transactions")
+            db_span.set_attribute("transaction.id", transaction_id)
+            
+            cur.execute("DELETE FROM transactions WHERE id = %s", (transaction_id,))
+            rows_affected = cur.rowcount
+            conn.commit()
+            cur.close()
+            conn.close()
+            active_connections_gauge.add(-1)
+            
+            query_duration = time.time() - start_time
+            database_query_duration.record(query_duration, {"operation": "delete_transaction"})
+            db_span.set_attribute("db.rows_affected", rows_affected)
+            span.set_attribute("operation.rows_affected", rows_affected)
+        
+        # Invalida cache e registra métrica
+        invalidate_summary_cache()
+        transactions_deleted_counter.add(1)
+        
+        span.set_attribute("operation.success", True)
+        return {}
 
 @app.get("/api/fixed-expenses", response_model=List[FixedExpense])
 def get_fixed_expenses():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT * FROM fixed_expenses ORDER BY description")
-    fixed_expenses = cur.fetchall()
-    cur.close()
-    conn.close()
-    return [dict(row) for row in fixed_expenses]
+    with tracer.start_as_current_span("api.get_fixed_expenses") as span:
+        api_requests_counter.add(1, {"endpoint": "/api/fixed-expenses", "method": "GET"})
+        
+        start_time = time.time()
+        
+        with tracer.start_as_current_span("database.query.fixed_expenses") as db_span:
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            db_span.set_attribute("db.operation", "SELECT")
+            db_span.set_attribute("db.table", "fixed_expenses")
+            
+            cur.execute("SELECT * FROM fixed_expenses ORDER BY description")
+            fixed_expenses = cur.fetchall()
+            cur.close()
+            conn.close()
+            active_connections_gauge.add(-1)
+            
+            query_duration = time.time() - start_time
+            database_query_duration.record(query_duration, {"operation": "get_fixed_expenses"})
+            db_span.set_attribute("db.rows_returned", len(fixed_expenses))
+            span.set_attribute("fixed_expenses.count", len(fixed_expenses))
+        
+        return [dict(row) for row in fixed_expenses]
 
 @app.post("/api/fixed-expenses", response_model=FixedExpense, status_code=201)
 def add_fixed_expense(expense: FixedExpense):

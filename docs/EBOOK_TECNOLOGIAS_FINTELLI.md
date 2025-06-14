@@ -1008,551 +1008,199 @@ Trace: Criar Transação
 └── Span: Retornar Resposta
 ```
 
-### Prometheus: Coleta de Métricas
+#### 🎯 Service Performance Monitoring (SPM) com Jaeger
 
-#### Tipos de Métricas
-- **Counter**: Sempre cresce (ex: requests_total)
-- **Gauge**: Pode subir/descer (ex: memory_usage)
-- **Histogram**: Distribuição de valores (ex: request_duration)
-- **Summary**: Similiar ao histogram com quantis
+##### O que é SPM?
 
-#### Queries Úteis
-```promql
-# Taxa de requisições por segundo
-rate(http_requests_total[5m])
+O **Service Performance Monitoring (SPM)** é uma funcionalidade avançada do Jaeger que **deriva métricas de performance automaticamente dos traces distribuídos**. Em vez de instrumentar manualmente cada métrica, o SPM analisa os traces coletados e calcula métricas de performance dos serviços em tempo real.
 
-# Latência P95
-histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+##### Por que SPM é Revolucionário?
 
-# Crescimento de transações
-increase(transactions_created_total[1h])
-
-# Alerta de alta latência
-rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 0.5
+```
+🎯 VANTAGENS DO SPM:
+├── 🤖 Automático: Métricas geradas automaticamente dos traces
+├── 📊 Consistente: Mesma fonte de dados (traces) para diagnóstico
+├── 🔍 Granular: Métricas por operação, endpoint, serviço
+├── 🚀 Eficiente: Uma instrumentação (traces) → múltiplas insights
+├── 📈 Dinâmico: Novas operações são monitoradas automaticamente
+└── 🎨 Rico: Correlação entre latência, throughput e erros
 ```
 
-### Grafana: Visualização e Alertas
+##### Como Funciona o SPM no Fintelli?
 
-#### Tipos de Painéis
-- **Time Series**: Métricas ao longo do tempo
-- **Stat**: Valores únicos importantes
-- **Bar Gauge**: Comparação de valores
-- **Table**: Dados tabulares
-- **Heatmap**: Distribuições de densidade
+```
+🔄 FLUXO DO SPM:
+1. 📡 Aplicação envia traces para OTel Collector
+2. ⚙️ Processador SpanMetrics analisa cada span
+3. 📊 Gera métricas RED (Rate, Errors, Duration)
+4. 📈 Prometheus coleta métricas SPM
+5. 🎨 Grafana visualiza dashboards automatizados
+6. 🚨 Alertas baseados em thresholds de performance
+```
 
-#### Dashboard Essencial para Fintech
+##### Métricas SPM Geradas Automaticamente
+
+**1. Rate (Taxa de Requisições)**
+```promql
+# Requisições por segundo por serviço
+rate(calls_total{service_name="fintelli-backend"}[5m])
+
+# Requisições por endpoint
+rate(calls_total{operation="/api/transactions"}[5m])
+```
+
+**2. Errors (Taxa de Erros)**
+```promql
+# Taxa de erro por serviço
+rate(calls_total{service_name="fintelli-backend",status_code=~"5.."}[5m]) /
+rate(calls_total{service_name="fintelli-backend"}[5m])
+
+# Erros absolutos por operação
+sum(rate(calls_total{operation="/api/transactions",status_code=~"5.."}[5m]))
+```
+
+**3. Duration (Latência)**
+```promql
+# Latência P95 por serviço
+histogram_quantile(0.95, 
+  rate(duration_bucket{service_name="fintelli-backend"}[5m])
+)
+
+# Latência média por endpoint
+rate(duration_sum{operation="/api/transactions"}[5m]) /
+rate(duration_count{operation="/api/transactions"}[5m])
+```
+
+##### Configuração SPM no Fintelli
+
+**1. OTel Collector com SpanMetrics:**
+```yaml
+processors:
+  spanmetrics:
+    metrics_exporter: prometheus
+    latency_histogram_buckets: [2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]
+    dimensions:
+      - name: http.method      # GET, POST, PUT, DELETE
+      - name: http.status_code # 200, 404, 500, etc.
+      - name: http.route       # /api/transactions, /api/users
+    exemplars:
+      enabled: true # Conecta métricas com traces específicos
+```
+
+**2. Pipeline de Processamento:**
+```yaml
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [spanmetrics, batch] # SpanMetrics processa traces
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus, prometheus/spm] # SPM vai para Prometheus
+```
+
+##### Dashboard SPM para Fintech
+
+**Métricas Críticas para o Fintelli:**
+
 ```json
 {
-  "dashboard": {
-    "title": "Fintelli - Visão Geral",
-    "panels": [
-      {
-        "title": "Transações por Hora",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(transactions_created_total[1h])"
-          }
-        ]
-      },
-      {
-        "title": "Latência da API",
-        "type": "graph", 
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"
-          }
-        ]
-      }
-    ]
-  }
+  "dashboard": "Fintelli SPM - Service Performance",
+  "panels": [
+    {
+      "title": "Taxa de Transações (TPS)",
+      "query": "rate(calls_total{operation=~'/api/transactions.*'}[5m])",
+      "threshold": "< 100 TPS = ⚠️ Warning"
+    },
+    {
+      "title": "Latência de Transações P95",
+      "query": "histogram_quantile(0.95, rate(duration_bucket{operation=~'/api/transactions.*'}[5m]))",
+      "threshold": "> 500ms = 🚨 Critical"
+    },
+    {
+      "title": "Taxa de Erro em Transações",
+      "query": "rate(calls_total{operation=~'/api/transactions.*',status_code=~'5..'}[5m]) / rate(calls_total{operation=~'/api/transactions.*'}[5m])",
+      "threshold": "> 1% = 🚨 Critical"
+    },
+    {
+      "title": "Dependências Downstream",
+      "query": "rate(calls_total{service_name=~'.*database.*|.*cache.*'}[5m])",
+      "description": "Performance de PostgreSQL e Redis"
+    }
+  ]
 }
 ```
 
----
+##### Alertas SPM Inteligentes
 
-## 🐳 Containerização e Deploy {#deploy}
-
-### Docker: Containerização de Aplicações
-
-#### Dockerfile do Backend
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Instalar dependências
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copiar aplicação
-COPY . .
-
-# Expor porta
-EXPOSE 8000
-
-# Comando de inicialização
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-#### Dockerfile do Frontend
-```dockerfile
-# Estágio de build
-FROM node:18-alpine as build
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-# Estágio de produção
-FROM nginx:1.21.3-alpine
-
-# Remover configuração padrão
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Copiar configuração customizada
-COPY nginx.conf /etc/nginx/conf.d/
-
-# Copiar arquivos buildados
-COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-```
-
-### Docker Compose: Orquestração Local
-
-#### Vantagens do Docker Compose
-- **Multi-Container**: Gerencia múltiplos serviços
-- **Networking**: Rede isolada entre containers
-- **Volumes**: Persistência de dados
-- **Environment**: Variáveis de ambiente centralizadas
-
-#### Configuração Completa
 ```yaml
-services:
-  backend:
-    build: ./src/backend
-    environment:
-      - OTEL_SERVICE_NAME=fintelli-backend
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    depends_on:
-      - db
-      - cache
-      - otel-collector
-    volumes:
-      - ./src/backend/app:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# Alerta de Latência Alta
+- alert: HighTransactionLatency
+  expr: |
+    histogram_quantile(0.95, 
+      rate(duration_bucket{operation="/api/transactions"}[5m])
+    ) > 0.5
+  for: 2m
+  labels:
+    severity: warning
+    service: fintelli-backend
+  annotations:
+    summary: "Latência alta em transações"
+    description: "P95 de latência: {{ $value }}s"
 
-  db:
-    image: postgres:14-alpine
-    environment:
-      - POSTGRES_DB=finance_db
-      - POSTGRES_USER=finance_user
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  cache:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
+# Alerta de Taxa de Erro
+- alert: HighErrorRate
+  expr: |
+    rate(calls_total{operation="/api/transactions",status_code=~"5.."}[5m]) /
+    rate(calls_total{operation="/api/transactions"}[5m]) > 0.01
+  for: 1m
+  labels:
+    severity: critical
+    service: fintelli-backend
+  annotations:
+    summary: "Taxa de erro alta"
+    description: "{{ $value | humanizePercentage }} de erros"
 ```
 
-### Nginx: Proxy Reverso e Load Balancer
-
-#### Configuração para SPA
-```nginx
-server {
-    listen 80;
-    
-    # Servir arquivos estáticos
-    location / {
-        root /usr/share/nginx/html;
-        try_files $uri $uri/ /index.html;
-    }
-    
-    # Proxy para API
-    location /api/ {
-        proxy_pass http://backend:8000/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-### Kubernetes: Orquestração em Produção
-
-#### Deployment do Backend
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: fintelli-backend
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: fintelli-backend
-  template:
-    metadata:
-      labels:
-        app: fintelli-backend
-    spec:
-      containers:
-      - name: backend
-        image: fintelli-backend:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: fintelli-secrets
-              key: postgres-password
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-```
-
-#### Service e Ingress
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: fintelli-backend-service
-spec:
-  selector:
-    app: fintelli-backend
-  ports:
-  - port: 8000
-    targetPort: 8000
-
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: fintelli-ingress
-spec:
-  rules:
-  - host: fintelli.example.com
-    http:
-      paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: fintelli-backend-service
-            port:
-              number: 8000
-```
-
----
-
-## 🤖 Inteligência Artificial {#ia}
-
-### 🧠 Conceitos Fundamentais de IA
-
-#### O que é Inteligência Artificial?
-
-A **Inteligência Artificial (IA)** é um campo da ciência da computação que se concentra em criar sistemas capazes de realizar tarefas que normalmente exigiriam inteligência humana.
+##### Benefícios do SPM para o Fintelli
 
 ```
-🎯 TIPOS DE IA:
-├── 🤖 IA Estreita (ANI): Especializada em tarefas específicas
-│   ├── Reconhecimento de imagens
-│   ├── Processamento de linguagem natural
-│   └── Sistemas de recomendação
-├── 🧠 IA Geral (AGI): Equivalente à inteligência humana (ainda teórica)
-└── 🌟 Super IA (ASI): Superior à inteligência humana (especulativa)
+💰 VALOR PARA FINTECH:
+├── 🎯 Precisão: Métricas derivadas de dados reais (traces)
+├── 🚀 Agilidade: Detecção automática de degradação
+├── 💡 Insights: Correlação entre latência e volume
+├── 🛡️ Confiabilidade: Monitoramento de SLA automatizado
+├── 💰 Custo: Reduz necessidade de instrumentação manual
+├── 📊 Compliance: Auditoria de performance para reguladores
+└── 🎨 UX: Identificação proativa de problemas de experiência
 ```
 
-#### Machine Learning vs Deep Learning
+##### Casos de Uso SPM no Fintelli
 
+**1. Detecção de Degradação:**
 ```
-📊 HIERARQUIA DA IA:
-┌─────────────────────────────────────┐
-│            INTELIGÊNCIA             │
-│               ARTIFICIAL            │
-│  ┌─────────────────────────────────┐ │
-│  │         MACHINE                 │ │
-│  │         LEARNING                │ │
-│  │  ┌─────────────────────────────┐ │ │
-│  │  │        DEEP                 │ │ │
-│  │  │       LEARNING              │ │ │
-│  │  │   (Redes Neurais)           │ │ │
-│  │  └─────────────────────────────┘ │ │
-│  └─────────────────────────────────┘ │
-└─────────────────────────────────────┘
+🔍 CENÁRIO: Black Friday bancário
+- SPM detecta latência crescendo: 100ms → 300ms → 800ms
+- Alerta automático antes que usuários sejam impactados
+- Correlação com traces mostra gargalo no PostgreSQL
+- Escalonamento automático ou otimização de query
 ```
 
-##### 🎯 Machine Learning
-- **Definição**: Sistemas que aprendem padrões a partir de dados
-- **Tipos**: Supervisionado, Não-supervisionado, Por reforço
-- **Algoritmos**: Regressão, Decision Trees, Random Forest, SVM
-
-##### 🧠 Deep Learning  
-- **Definição**: Redes neurais artificiais com múltiplas camadas
-- **Especialidade**: Reconhecimento de padrões complexos
-- **Aplicações**: Visão computacional, NLP, speech recognition
-
-#### Large Language Models (LLMs)
-
-##### O que são LLMs?
-
-**Large Language Models** são modelos de IA treinados em grandes volumes de texto para compreender e gerar linguagem natural.
-
+**2. Análise de Dependências:**
 ```
-🔬 CARACTERÍSTICAS DOS LLMS:
-├── 📚 Treinamento: Bilhões de parâmetros e petabytes de texto
-├── 🌍 Multilíngues: Suportam dezenas de idiomas
-├── 🎯 Multimodal: Texto, imagem, áudio (modelos avançados)
-├── 🔄 Few-shot Learning: Aprendem com poucos exemplos
-├── 🧠 Reasoning: Capacidade de raciocínio e inferência
-└── 💬 Conversational: Mantêm contexto em diálogos
+📊 INSIGHT: Impacto do Redis no Performance
+- SPM mostra: cache miss = +200ms latência
+- Decisão: otimizar estratégia de cache
+- Resultado: latência P95 reduzida de 400ms para 150ms
 ```
 
-##### Evolução dos LLMs
-
+**3. Monitoramento de SLA:**
 ```
-📈 TIMELINE DOS LLMS:
-2017: Transformer (Attention is All You Need)
-2018: BERT (Bidirectional Encoder)
-2019: GPT-2 (Generative Pre-trained Transformer)
-2020: GPT-3 (175B parâmetros)
-2022: ChatGPT (GPT-3.5 + RLHF)
-2023: GPT-4, PaLM 2, Claude 2
-2024: Gemini, GPT-4 Turbo, Claude 3
+📋 SLA FINTECH: 99.9% uptime, latência P95 < 500ms
+- SPM monitora automaticamente esses thresholds
+- Dashboards executivos com status em tempo real
+- Relatórios de compliance automatizados
 ```
-
-#### Por que IA no Fintelli?
-
-```
-💰 CASOS DE USO EM FINTECH:
-├── 📄 Processamento de Documentos
-│   ├── Extração de dados de faturas
-│   ├── Análise de comprovantes
-│   └── OCR inteligente
-├── 📊 Análise Financeira
-│   ├── Categorização automática de gastos
-│   ├── Detecção de padrões de consumo
-│   └── Previsão de fluxo de caixa
-├── 🛡️ Segurança e Fraude
-│   ├── Detecção de anomalias
-│   ├── Análise comportamental
-│   └── Score de risco
-├── 🤖 Assistência ao Cliente
-│   ├── Chatbots inteligentes
-│   ├── Recomendações personalizadas
-│   └── Suporte automatizado
-└── 📈 Business Intelligence
-    ├── Relatórios automatizados
-    ├── Insights sobre dados
-    └── Projeções financeiras
-```
-
-### 🚀 Google Gemini API
-
-#### O que é o Google Gemini?
-
-O **Gemini** é a mais recente família de LLMs do Google, projetada para ser **multimodal** (texto, imagem, áudio, vídeo) e altamente eficiente.
-
-```
-🌟 MODELOS GEMINI:
-├── 🏆 Gemini Ultra: Modelo mais poderoso para tarefas complexas
-├── ⚡ Gemini Pro: Equilibrio entre performance e velocidade
-└── 📱 Gemini Nano: Otimizado para dispositivos móveis
-```
-
-#### Por que Escolhemos Gemini?
-
-```
-✅ VANTAGENS DO GEMINI:
-├── 🌍 Multimodal: Processa texto, imagem, PDF simultaneamente
-├── ⚡ Performance: Latência baixa e throughput alto
-├── 🔒 Segurança: Safety filters e responsible AI
-├── 💰 Custo-benefício: Preços competitivos
-├── 🔧 API Simples: Integração fácil e documentação clara
-├── 🌐 Disponibilidade: Suporte global e SLA garantido
-└── 🔄 Atualizações: Melhorias constantes do modelo
-```
-
-#### Integração Técnica
-
-##### Configuração Básica
-```python
-import google.generativeai as genai
-import os
-from typing import Dict, Any
-import json
-
-# Configuração da API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Inicialização do modelo
-model = genai.GenerativeModel('gemini-1.5-flash')
-```
-
-##### Processamento de Documentos Financeiros
-```python
-@app.post("/api/analyze-invoice")
-async def analyze_invoice(file: UploadFile = File(...)):
-    """
-    Analisa faturas usando Gemini para extrair dados estruturados
-    """
-    try:
-        # Ler conteúdo do arquivo
-        file_content = await file.read()
-        
-        # Prompt estruturado para extração de dados
-        prompt = """
-        Você é um especialista em análise de documentos financeiros.
-        Analise este documento e extraia as informações em formato JSON:
-
-        {
-            "fornecedor": {
-                "nome": "Nome do fornecedor",
-                "cnpj": "XX.XXX.XXX/XXXX-XX",
-                "endereco": "Endereço completo"
-            },
-            "fatura": {
-                "numero": "Número da fatura",
-                "data_emissao": "YYYY-MM-DD",
-                "data_vencimento": "YYYY-MM-DD",
-                "valor_total": 0.00,
-                "impostos": 0.00
-            },
-            "itens": [
-                {
-                    "descricao": "Descrição do item",
-                    "quantidade": 1,
-                    "valor_unitario": 0.00,
-                    "valor_total": 0.00
-                }
-            ],
-            "categoria_sugerida": "categoria automática baseada no conteúdo"
-        }
-
-        Se alguma informação não estiver disponível, use null.
-        Retorne APENAS o JSON, sem explicações adicionais.
-        """
-        
-        # Chamada para o modelo
-        response = model.generate_content([
-            prompt,
-            {
-                "mime_type": file.content_type,
-                "data": file_content
-            }
-        ])
-        
-        # Parse e validação da resposta
-        cleaned_response = response.text.strip()
-        # Remove marcadores de código se presentes
-        if cleaned_response.startswith("```"):
-            cleaned_response = cleaned_response.split("\n", 1)[1]
-        if cleaned_response.endswith("```"):
-            cleaned_response = cleaned_response.rsplit("\n", 1)[0]
-            
-        parsed_data = json.loads(cleaned_response)
-        
-        return {
-            "success": True,
-            "data": parsed_data,
-            "confidence": "high"  # Poderia ser calculado baseado na resposta
-        }
-        
-    except json.JSONDecodeError as e:
-        return {
-            "success": False,
-            "error": "Não foi possível processar o documento",
-            "details": str(e)
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": "Erro interno na análise",
-            "details": str(e)
-        }
-```
-
-### 🎯 Prompt Engineering
-
-#### O que é Prompt Engineering?
-
-**Prompt Engineering** é a arte e ciência de criar instruções eficazes para modelos de linguagem, maximizando a qualidade e precisão das respostas.
-
-#### Técnicas Fundamentais
-
-##### 1. 🎯 Especificidade e Clareza
-```python
-# ❌ Prompt vago
-"Analise este documento"
-
-# ✅ Prompt específico
-"""
-Analise esta fatura e extraia:
-1. Nome do fornecedor
-2. Valor total (em formato numérico)
-3. Data de vencimento (formato YYYY-MM-DD)
-4. Lista de itens com descrição e valor
-
-Retorne em formato JSON estruturado.
-"""
-```
-
-##### 2. 📝 Few-Shot Learning
-```python
-prompt = """
-Categorize as seguintes transações financeiras:
-
-Exemplos:
-"Pagamento Uber" → Categoria: "Transporte"
-"Supermercado Extra" → Categoria: "Alimentação"
-"Farmácia Droga Raia" → Categoria: "Saúde"
-
-Agora categorize:
-"{transaction_description}" → Categoria: ?
-"""
-```
-
-##### 3. 🔄 Chain of Thought
-```python
-prompt = """
-Analise esta despesa e determine se é suspeita:
-
-Dados: {transaction_data}
-
-Processo de análise:
-1. Compare com padrão histórico do usuário
-2. Verifique se valor está dentro do esperado  
-3. Analise horário e localização
-4. Considere categoria da transação
-5. Dê uma pontuação de risco (0-100)
-
-Conclusão: [Normal/Suspeita] - Justificativa:
-"""
-```
-
-#### Boas Práticas de Prompt Engineering
-
-```
-🏆 MELHORES PRÁTICAS:
-├── 📋 Estrutura Clara: Use formato consistente
-├── 🎯 Objetivo Específico: Uma tarefa por prompt
-├── 📊 Formato de Saída: Especifique JSON, tabela, etc.
-├── 🔍 Exemplos: Inclua few-shot examples
-├── ⚠️ Tratamento de Erros: Considere casos extremos
-├── 🧪 Iteração: Teste e refine continuamente
-├── 📏 Comprimento: Balance entre contexto e eficiência
-└── 🔒 Segurança: Evite prompt injection
-```
+````
