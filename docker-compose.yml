@@ -1,0 +1,94 @@
+services:
+  # Serviço de Backend (API com FastAPI)
+  backend:
+    build: ./src/backend
+    container_name: fintelli_backend
+    env_file:
+      - ./.env
+    environment:
+      # Configuração do OpenTelemetry para o Backend
+      - OTEL_SERVICE_NAME=fintelli-backend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 # Endpoint gRPC do Collector
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./src/backend/app:/app
+    depends_on:
+      - db
+      - cache
+      - otel-collector # Depende do collector para enviar telemetria
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Serviço de Banco de Dados (Postgres)
+  db:
+    image: postgres:14-alpine
+    container_name: fintelli_db
+    env_file:
+      - ./.env
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Serviço de Cache (Redis)
+  cache:
+    image: redis:7-alpine
+    container_name: fintelli_cache
+    ports:
+      - "6380:6379"
+
+  # Serviço de Frontend (Nginx)
+  frontend:
+    build: ./src/frontend
+    container_name: fintelli_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  # --- Pilha de Observabilidade ---
+
+  # 1. OTel Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.88.0
+    container_name: fintelli_otel_collector
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./config/otel-collector-config.yml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+      - "8888:8889"  # Prometheus exporter
+
+  # 2. Jaeger para Traces
+  jaeger:
+    image: jaegertracing/all-in-one:1.38
+    container_name: fintelli_jaeger
+    ports:
+      - "16687:16686" # UI do Jaeger
+      - "14251:14250" # Coleta de traces
+
+  # 3. Prometheus para Métricas
+  prometheus:
+    image: prom/prometheus:v2.37.0
+    container_name: fintelli_prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+
+  # 4. Grafana para Dashboards
+  grafana:
+    image: grafana/grafana:9.1.0
+    container_name: fintelli_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:

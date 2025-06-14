@@ -1,0 +1,32 @@
+# Configuração do OTel Collector
+
+receivers:
+  otlp: # Habilita o receptor OTLP
+    protocols:
+      grpc: # Para o backend em Python
+      http: # Para o frontend em JS
+
+processors:
+  batch:
+
+exporters:
+  # Exportador para o Jaeger (Traces) via OTLP
+  otlp/jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # Exportador para o Prometheus (Métricas)
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

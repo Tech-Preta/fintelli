@@ -1,0 +1,114 @@
+replicaCount: 3
+
+# Configurações do Backend
+backend:
+  image:
+    repository: your-repo/finance-backend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  config:
+    # A chave da API do Gemini será injetada a partir de um segredo
+    geminiApiKey: ""
+  service:
+    type: ClusterIP
+    port: 8000
+  resources: {}
+  #  limits:
+  #    cpu: 200m
+  #    memory: 256Mi
+  #  requests:
+  #    cpu: 100m
+  #    memory: 128Mi
+
+# Configurações do Frontend
+frontend:
+  image:
+    repository: your-repo/finance-frontend # <- SUBSTITUA pelo seu repositório de imagem
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 80
+  resources: {}
+
+# Configurações do OTel Collector
+otel-collector:
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.88.0"
+  config:
+    receivers:
+      otlp:
+        protocols: { grpc: {}, http: {} }
+    processors:
+      batch: {}
+    exporters:
+      jaeger:
+        endpoint: "jaeger-collector.default.svc.cluster.local:14250" # Assume Jaeger no namespace 'default'
+        tls: { insecure: true }
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [jaeger]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus]
+
+# Configurações de Ingress para expor os serviços
+ingress:
+  enabled: true
+  className: "nginx" # Assumindo um Ingress Controller NGINX
+  hosts:
+    - host: finance.local # <- ALTERE para o seu domínio
+      paths:
+        - path: /api
+          pathType: Prefix
+          service:
+            name: backend
+            port: 8000
+        - path: /
+          pathType: Prefix
+          service:
+            name: frontend
+            port: 80
+    - host: jaeger.finance.local # <- ALTERE para o seu domínio
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: jaeger-query # Nome do serviço do Jaeger
+            port: 16686
+    - host: grafana.finance.local # <- ALTERE para o seu domínio
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: "my-finance-release-grafana" # Nome do serviço do Grafana (verifique após o deploy)
+            port: 80
+
+# Condições para instalar as dependências
+postgresql:
+  enabled: true
+  auth:
+    database: finance_db
+    username: finance_user
+    password: "" # Será injetado a partir do segredo 'postgres-secret'
+
+redis:
+  enabled: true
+
+prometheus-stack:
+  enabled: true
+  # Desabilitar componentes não necessários para simplificar
+  prometheus-node-exporter:
+    enabled: false
+  prometheus-adapter:
+    enabled: false
+
+jaeger:
+  enabled: true

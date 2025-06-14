@@ -1,0 +1,24 @@
+apiVersion: v2
+name: Fintelli
+description: Um sistema de finanças pessoais com observabilidade integrada.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: postgresql
+    version: "12.1.6"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "16.8.6"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: kube-prometheus-stack
+    version: "35.2.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: prometheus-stack.enabled
+  - name: jaeger
+    version: "2.30.0"
+    repository: "https://jaegertracing.github.io/helm-charts"
+    condition: jaeger.enabled

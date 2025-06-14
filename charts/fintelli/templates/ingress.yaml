@@ -1,0 +1,29 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "finance-stack.fullname" . }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                {{- if eq .service.name "backend" }}
+                name: {{ include "finance-stack.backend.name" $ }}
+                {{- else if eq .service.name "frontend" }}
+                name: {{ include "finance-stack.frontend.name" $ }}
+                {{- else }}
+                name: {{ .service.name }}
+                {{- end }}
+                port:
+                  number: {{ .service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

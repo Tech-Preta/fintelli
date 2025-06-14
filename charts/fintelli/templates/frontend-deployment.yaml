@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "finance-stack.frontend.name" . }}-config
+data:
+  nginx.conf: |
+    server {
+        listen 80;
+        location / {
+            root   /usr/share/nginx/html;
+            index  index.html;
+            try_files $uri /index.html;
+        }
+        location /api/ {
+            proxy_pass http://{{ include "finance-stack.backend.name" . }}:{{ .Values.backend.service.port }}/api/;
+        }
+        location /v1/traces {
+            proxy_pass http://{{ include "finance-stack.otel-collector.name" . }}:4318/v1/traces;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "finance-stack.frontend.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.frontend.service.port }}
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: {{ include "finance-stack.frontend.name" . }}-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "finance-stack.frontend.name" . }}
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.service.port }}
+  selector:
+    app: frontend
