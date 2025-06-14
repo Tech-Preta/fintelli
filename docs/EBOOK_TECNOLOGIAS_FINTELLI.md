@@ -7,17 +7,18 @@
 ## 📑 Sumário
 
 1. [Introdução](#introducao)
-2. [Arquitetura Geral](#arquitetura)
-3. [Frontend Moderno](#frontend)
-4. [Backend Robusto](#backend)
-5. [Banco de Dados e Cache](#dados)
-6. [Observabilidade Completa](#observabilidade)
-7. [Containerização e Deploy](#deploy)
-8. [Inteligência Artificial](#ia)
-9. [Testes e Qualidade](#testes)
-10. [Validações e Monitoramento](#validacoes)
-11. [Boas Práticas](#praticas)
-12. [Conclusão](#conclusao)
+2. [Conceitos Fundamentais](#conceitos)
+3. [Arquitetura Geral](#arquitetura)
+4. [Frontend Moderno](#frontend)
+5. [Backend Robusto](#backend)
+6. [Banco de Dados e Cache](#dados)
+7. [Observabilidade Completa](#observabilidade)
+8. [Containerização e Deploy](#deploy)
+9. [Inteligência Artificial](#ia)
+10. [Testes e Qualidade](#testes)
+11. [Validações e Monitoramento](#validacoes)
+12. [Boas Práticas](#praticas)
+13. [Conclusão](#conclusao)
 
 ---
 
@@ -44,6 +45,585 @@ Este e-book não é apenas uma documentação técnica, mas uma **jornada educat
 - 🐳 **DevOps**: Docker, Docker Compose, Kubernetes
 - 🤖 **IA Integrada**: Google Gemini API
 - 🧪 **Qualidade**: Testes automatizados, CI/CD
+
+---
+
+## 🧠 Conceitos Fundamentais {#conceitos}
+
+Antes de mergulharmos nas tecnologias específicas, é essencial entender os conceitos fundamentais que norteiam a arquitetura moderna de aplicações. Esta seção explica **o que é**, **por que usar** e **como funciona** cada conceito.
+
+---
+
+### 🌐 Arquitetura de Aplicações Web
+
+#### O que é uma Aplicação Web Moderna?
+
+Uma aplicação web moderna é um sistema distribuído que separa responsabilidades em camadas distintas:
+
+- **Frontend (Client-side)**: Interface do usuário executada no navegador
+- **Backend (Server-side)**: Lógica de negócio executada no servidor
+- **Banco de Dados**: Armazenamento persistente de dados
+- **Cache**: Armazenamento temporário para performance
+- **Observabilidade**: Monitoramento e diagnóstico do sistema
+
+#### Por que Separar em Camadas?
+
+```
+🎯 VANTAGENS DA SEPARAÇÃO:
+├── 🔧 Manutenibilidade: Cada camada pode ser modificada independentemente
+├── 📈 Escalabilidade: Cada camada pode ser escalada conforme necessidade
+├── 🛡️ Segurança: Isolamento de responsabilidades reduz superfície de ataque
+├── 👥 Especialização: Equipes podem focar em suas áreas de expertise
+└── 🔄 Reutilização: Componentes podem ser reutilizados em outros projetos
+```
+
+#### Evolução das Arquiteturas
+
+```
+📊 EVOLUÇÃO HISTÓRICA:
+1990s: Monolíticas (tudo em um servidor)
+2000s: Client-Server (separação básica)
+2010s: SOA - Service Oriented Architecture
+2020s: Microserviços + Cloud Native + Observabilidade
+```
+
+---
+
+### 💾 Conceitos de Persistência de Dados
+
+#### O que é um Banco de Dados?
+
+Um banco de dados é um **sistema organizado para armazenar, gerenciar e recuperar informações** de forma eficiente e confiável.
+
+#### Por que Usar um Banco de Dados?
+
+```
+🎯 PROBLEMAS QUE RESOLVE:
+├── 💿 Persistência: Dados sobrevivem ao reinício da aplicação
+├── 🔒 Integridade: Garante consistência e validação dos dados
+├── 🔍 Consultas: Permite buscas complexas e eficientes
+├── 👥 Concorrência: Múltiplos usuários acessando simultaneamente
+├── 🛡️ Segurança: Controle de acesso e auditoria
+├── 📊 Análise: Relatórios e business intelligence
+└── 🔄 Backup: Recuperação em caso de falhas
+```
+
+#### Tipos de Bancos de Dados
+
+##### 🗃️ Relacionais (SQL)
+```sql
+-- Estrutura organizada em tabelas com relacionamentos
+CREATE TABLE transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    amount DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**Características:**
+- **ACID**: Atomicidade, Consistência, Isolamento, Durabilidade
+- **Schema rígido**: Estrutura definida previamente
+- **Relacionamentos**: Chaves estrangeiras e joins
+- **SQL**: Linguagem padronizada para consultas
+
+##### 📄 Não-Relacionais (NoSQL)
+```javascript
+// Estrutura flexível, orientada a documentos
+{
+  "id": "trans_123",
+  "user": "user_456",
+  "amount": 150.75,
+  "tags": ["food", "restaurant"],
+  "metadata": {
+    "location": "São Paulo",
+    "payment_method": "credit_card"
+  }
+}
+```
+
+**Tipos principais:**
+- **Document**: MongoDB, CouchDB
+- **Key-Value**: Redis, DynamoDB
+- **Column**: Cassandra, HBase
+- **Graph**: Neo4j, Amazon Neptune
+
+#### Por que Escolhemos PostgreSQL?
+
+```
+🏆 VANTAGENS DO POSTGRESQL:
+├── 🛡️ ACID Completo: Transações confiáveis
+├── 🔍 SQL Avançado: Window functions, CTEs, JSON
+├── 📈 Performance: Índices avançados, query planner
+├── 🔧 Extensibilidade: Extensões como PostGIS, pg_stat_statements
+├── 🌍 Open Source: Sem vendor lock-in
+├── 👥 Comunidade: Grande ecossistema e suporte
+├── 🔒 Segurança: Row-level security, SSL/TLS
+└── 💰 Custo: Gratuito para uso comercial
+```
+
+**Casos de uso ideais:**
+- Aplicações que precisam de consistência forte
+- Transações financeiras (como o Fintelli)
+- Relatórios e análises complexas
+- Sistemas que crescem em complexidade
+
+---
+
+### ⚡ Conceito de Cache
+
+#### O que é Cache?
+
+Cache é um **armazenamento temporário de dados** que permite acesso mais rápido a informações frequentemente solicitadas.
+
+#### Como Funciona o Cache?
+
+```
+🔄 FLUXO DO CACHE:
+1. 🔍 Aplicação solicita dados
+2. ✅ Cache HIT: Dados encontrados no cache → Retorna imediatamente
+3. ❌ Cache MISS: Dados não estão no cache → Busca no banco → Armazena no cache
+4. ⏰ TTL: Dados expiram após tempo determinado
+5. 🔄 Renovação: Processo se repete
+```
+
+#### Por que Usar Cache?
+
+```
+🚀 BENEFÍCIOS DO CACHE:
+├── ⚡ Performance: 10-100x mais rápido que banco de dados
+├── 📈 Escalabilidade: Reduz carga no banco principal
+├── 💰 Custo: Menos recursos computacionais necessários
+├── 🌍 Experiência: Usuário tem resposta mais rápida
+├── 🛡️ Disponibilidade: Continua funcionando se banco falhar temporariamente
+└── 📊 Throughput: Mais requisições por segundo
+```
+
+#### Tipos de Cache
+
+##### 1. **Cache de Aplicação (In-Memory)**
+```python
+# Cache simples em memória da aplicação
+cache = {}
+
+def get_user_summary(user_id):
+    if user_id in cache:
+        return cache[user_id]  # Cache HIT
+    
+    # Cache MISS - busca no banco
+    summary = database.get_summary(user_id)
+    cache[user_id] = summary
+    return summary
+```
+
+##### 2. **Cache Distribuído (Redis)**
+```python
+import redis
+r = redis.Redis()
+
+def get_summary():
+    # Tenta buscar no cache
+    cached = r.get("summary")
+    if cached:
+        return json.loads(cached)
+    
+    # Cache miss - busca no banco
+    summary = calculate_summary_from_db()
+    
+    # Armazena no cache por 5 minutos
+    r.setex("summary", 300, json.dumps(summary))
+    return summary
+```
+
+#### Por que Escolhemos Redis?
+
+```
+🏆 VANTAGENS DO REDIS:
+├── ⚡ Ultra-rápido: Dados em memória (RAM)
+├── 🌍 Distribuído: Múltiplas instâncias da aplicação podem usar
+├── 🔧 Estruturas ricas: Strings, Lists, Sets, Hashes, Sorted Sets
+├── 💾 Persistência: Pode salvar dados no disco
+├── 🔒 Atomic Operations: Operações thread-safe
+├── 📊 Pub/Sub: Sistema de mensageria
+├── ⏰ TTL: Expiração automática de chaves
+├── 🛡️ Clustering: Alta disponibilidade
+└── 👥 Ecosistema: Amplamente adotado na indústria
+```
+
+**Casos de uso no Fintelli:**
+```python
+# Cache de resumo financeiro (calculado frequentemente)
+r.set("user:123:summary", json.dumps(summary), ex=300)
+
+# Cache de sessão do usuário
+r.set("session:abc123", user_data, ex=3600)
+
+# Cache de configurações da aplicação
+r.set("app:config", config_data, ex=86400)
+
+# Rate limiting (controle de requisições)
+r.incr("rate_limit:user:123", ex=60)
+```
+
+---
+
+### 📊 Observabilidade: Métricas, Logs e Traces
+
+#### O que é Observabilidade?
+
+Observabilidade é a **capacidade de entender o estado interno de um sistema** através de suas saídas externas. É essencial para:
+
+- **Detectar problemas** antes que afetem usuários
+- **Diagnosticar causas** de lentidão ou falhas
+- **Otimizar performance** baseado em dados reais
+- **Entender comportamento** do usuário e do sistema
+
+#### Os Três Pilares da Observabilidade
+
+```
+🏗️ PILARES DA OBSERVABILIDADE:
+├── 📊 MÉTRICAS: "O QUE está acontecendo?"
+├── 📝 LOGS: "O QUE aconteceu em detalhes?"
+└── 🔍 TRACES: "COMO as requisições fluem pelo sistema?"
+```
+
+#### 📊 Métricas: O Pulso do Sistema
+
+##### O que são Métricas?
+
+Métricas são **valores numéricos coletados ao longo do tempo** que representam o estado e performance do sistema.
+
+##### Tipos de Métricas
+
+```python
+# 1. COUNTERS - Sempre aumentam
+transactions_created_total = 1547
+api_requests_total = 25892
+errors_total = 23
+
+# 2. GAUGES - Podem subir e descer
+active_users_current = 234
+memory_usage_bytes = 1073741824
+cpu_usage_percent = 67.5
+
+# 3. HISTOGRAMS - Distribuição de valores
+http_request_duration_seconds = {
+    "0.1": 892,   # 892 requests < 100ms
+    "0.5": 1205,  # 1205 requests < 500ms
+    "1.0": 1456,  # 1456 requests < 1s
+    "+Inf": 1500  # Total de requests
+}
+
+# 4. SUMMARIES - Quantis calculados
+response_time_summary = {
+    "0.5": 0.123,  # 50% das requests < 123ms (mediana)
+    "0.9": 0.456,  # 90% das requests < 456ms
+    "0.99": 1.234  # 99% das requests < 1.234s
+}
+```
+
+##### Métricas Essenciais (Golden Signals)
+
+```
+🎯 GOLDEN SIGNALS:
+├── 📈 Latency: Quanto tempo leva para responder?
+├── 📊 Traffic: Quantas requisições por segundo?
+├── ❌ Errors: Qual é a taxa de erro?
+└── 🔋 Saturation: Quão "cheios" estão os recursos?
+```
+
+**Exemplo no Fintelli:**
+```python
+from prometheus_client import Counter, Histogram, Gauge
+
+# Contador de transações criadas
+transactions_created = Counter('transactions_created_total', 
+                             'Total de transações criadas')
+
+# Histograma de tempo de resposta da API
+request_duration = Histogram('http_request_duration_seconds',
+                           'Tempo de resposta HTTP')
+
+# Gauge de conexões ativas no banco
+db_connections = Gauge('database_connections_active',
+                      'Conexões ativas no banco de dados')
+
+# Usando as métricas
+@request_duration.time()
+def create_transaction():
+    # ... lógica da função
+    transactions_created.inc()  # Incrementa contador
+    db_connections.set(get_active_connections())  # Atualiza gauge
+```
+
+#### 📝 Logs: O Diário do Sistema
+
+##### O que são Logs?
+
+Logs são **registros cronológicos de eventos** que aconteceram no sistema, com informações contextuais detalhadas.
+
+##### Estrutura de um Log
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:45.123Z",
+  "level": "INFO",
+  "service": "fintelli-backend",
+  "message": "Transaction created successfully",
+  "user_id": "user_123",
+  "transaction_id": "tx_456",
+  "amount": 150.75,
+  "trace_id": "abc123def456",
+  "span_id": "span_789"
+}
+```
+
+##### Níveis de Log
+
+```python
+import logging
+
+# CRITICAL - Sistema não pode continuar
+logging.critical("Database connection failed completely")
+
+# ERROR - Erro que impede operação específica
+logging.error("Failed to create transaction", extra={
+    "user_id": user_id,
+    "error": str(e)
+})
+
+# WARNING - Algo inesperado, mas sistema continua
+logging.warning("Rate limit approaching", extra={
+    "user_id": user_id,
+    "current_rate": current_rate
+})
+
+# INFO - Informações importantes para auditoria
+logging.info("Transaction created", extra={
+    "transaction_id": tx_id,
+    "amount": amount
+})
+
+# DEBUG - Informações detalhadas para desenvolvimento
+logging.debug("Cache miss for user summary", extra={
+    "user_id": user_id,
+    "cache_key": cache_key
+})
+```
+
+##### Logs Estruturados vs Não-Estruturados
+
+```python
+# ❌ Log não-estruturado (difícil de processar)
+logging.info(f"User {user_id} created transaction of ${amount}")
+
+# ✅ Log estruturado (fácil de processar)
+logging.info("Transaction created", extra={
+    "event_type": "transaction_created",
+    "user_id": user_id,
+    "amount": amount,
+    "currency": "BRL"
+})
+```
+
+#### 🔍 Traces: O Mapa da Requisição
+
+##### O que são Traces?
+
+Um trace é o **caminho completo de uma requisição** através de todos os serviços e componentes do sistema.
+
+##### Anatomia de um Trace
+
+```
+🔍 TRACE: User creates transaction
+├── 📱 SPAN: Frontend HTTP Request (100ms)
+│   ├── 🌐 SPAN: API Gateway (5ms)
+│   ├── ⚙️ SPAN: Backend Processing (80ms)
+│   │   ├── 🔍 SPAN: Input Validation (2ms)
+│   │   ├── 💾 SPAN: Database Insert (45ms)
+│   │   ├── ⚡ SPAN: Cache Update (3ms)
+│   │   └── 📊 SPAN: Metrics Recording (1ms)
+│   └── 🎨 SPAN: Frontend Rendering (15ms)
+```
+
+##### Conceitos de Trace
+
+```python
+# TRACE ID - Identificador único da requisição completa
+trace_id = "abc123def456"
+
+# SPAN ID - Identificador único de cada operação
+span_id = "span_789"
+
+# PARENT SPAN - Span que iniciou o span atual
+parent_span_id = "span_456"
+
+# BAGGAGE - Dados que passam entre spans
+baggage = {
+    "user_id": "user_123",
+    "session_id": "session_abc"
+}
+```
+
+##### Implementação de Tracing
+
+```python
+from opentelemetry import trace
+
+tracer = trace.get_tracer(__name__)
+
+def create_transaction(user_id, amount):
+    # Inicia span principal
+    with tracer.start_as_current_span("create_transaction") as span:
+        span.set_attribute("user_id", user_id)
+        span.set_attribute("amount", amount)
+        
+        try:
+            # Span para validação
+            with tracer.start_as_current_span("validate_input"):
+                validate_transaction_data(amount)
+            
+            # Span para banco de dados
+            with tracer.start_as_current_span("database_insert") as db_span:
+                db_span.set_attribute("table", "transactions")
+                transaction_id = insert_transaction(user_id, amount)
+                db_span.set_attribute("transaction_id", transaction_id)
+            
+            # Span para cache
+            with tracer.start_as_current_span("cache_update"):
+                update_user_cache(user_id)
+                
+            span.set_attribute("transaction_id", transaction_id)
+            span.set_status(trace.Status(trace.StatusCode.OK))
+            
+        except Exception as e:
+            span.record_exception(e)
+            span.set_status(trace.Status(
+                trace.StatusCode.ERROR, 
+                str(e)
+            ))
+            raise
+```
+
+#### 🔧 OpenTelemetry: O Padrão Universal
+
+##### O que é OpenTelemetry?
+
+OpenTelemetry é um **framework open-source** que fornece APIs, bibliotecas e ferramentas para coletar, processar e exportar dados de telemetria (métricas, logs e traces).
+
+##### Por que OpenTelemetry?
+
+```
+🎯 PROBLEMAS QUE O OTEL RESOLVE:
+├── 🔧 Padronização: Um padrão para todas as linguagens
+├── 🌍 Vendor Neutral: Não prende a um fornecedor específico
+├── 📊 Correlação: Liga métricas, logs e traces
+├── 🔄 Instrumentação Automática: Bibliotecas já instrumentadas
+├── 🛠️ Flexibilidade: Escolha suas ferramentas de backend
+├── 📈 Sampling: Controla volume de dados coletados
+└── 🔍 Context Propagation: Propaga contexto entre serviços
+```
+
+##### Arquitetura do OpenTelemetry
+
+```
+🏗️ ARQUITETURA OTEL:
+├── 📱 Aplicação com SDK
+├── 🔄 OTel Collector (opcional)
+├── 📊 Backends (Jaeger, Prometheus, etc.)
+└── 🖥️ Frontends (Grafana, Jaeger UI, etc.)
+```
+
+##### Instrumentação no Fintelli
+
+```python
+# Backend - Python
+from opentelemetry import trace, metrics
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+
+# Configuração do tracer
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+
+# Configuração de métricas
+metrics.set_meter_provider(MeterProvider())
+meter = metrics.get_meter(__name__)
+
+# Métricas customizadas
+transaction_counter = meter.create_counter(
+    "transactions_created_total",
+    description="Total de transações criadas"
+)
+
+request_histogram = meter.create_histogram(
+    "http_request_duration_seconds",
+    description="Duração das requisições HTTP"
+)
+```
+
+```javascript
+// Frontend - JavaScript
+import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-http';
+
+// Configuração do tracer para browser
+const provider = new WebTracerProvider();
+const exporter = new OTLPTraceExporter({
+  url: 'http://localhost:4318/v1/traces',
+});
+
+provider.addSpanProcessor(new BatchSpanProcessor(exporter));
+provider.register();
+
+// Instrumentação automática de fetch
+registerInstrumentations({
+  instrumentations: [
+    new FetchInstrumentation(),
+    new XMLHttpRequestInstrumentation(),
+  ],
+});
+```
+
+##### Collector: O Hub Central
+
+```yaml
+# otel-collector-config.yml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+  
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+```
 
 ---
 
@@ -679,1041 +1259,300 @@ spec:
 
 ## 🤖 Inteligência Artificial {#ia}
 
-### Google Gemini API: IA Generativa
+### 🧠 Conceitos Fundamentais de IA
 
-#### Integração com FastAPI
+#### O que é Inteligência Artificial?
+
+A **Inteligência Artificial (IA)** é um campo da ciência da computação que se concentra em criar sistemas capazes de realizar tarefas que normalmente exigiriam inteligência humana.
+
+```
+🎯 TIPOS DE IA:
+├── 🤖 IA Estreita (ANI): Especializada em tarefas específicas
+│   ├── Reconhecimento de imagens
+│   ├── Processamento de linguagem natural
+│   └── Sistemas de recomendação
+├── 🧠 IA Geral (AGI): Equivalente à inteligência humana (ainda teórica)
+└── 🌟 Super IA (ASI): Superior à inteligência humana (especulativa)
+```
+
+#### Machine Learning vs Deep Learning
+
+```
+📊 HIERARQUIA DA IA:
+┌─────────────────────────────────────┐
+│            INTELIGÊNCIA             │
+│               ARTIFICIAL            │
+│  ┌─────────────────────────────────┐ │
+│  │         MACHINE                 │ │
+│  │         LEARNING                │ │
+│  │  ┌─────────────────────────────┐ │ │
+│  │  │        DEEP                 │ │ │
+│  │  │       LEARNING              │ │ │
+│  │  │   (Redes Neurais)           │ │ │
+│  │  └─────────────────────────────┘ │ │
+│  └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
+
+##### 🎯 Machine Learning
+- **Definição**: Sistemas que aprendem padrões a partir de dados
+- **Tipos**: Supervisionado, Não-supervisionado, Por reforço
+- **Algoritmos**: Regressão, Decision Trees, Random Forest, SVM
+
+##### 🧠 Deep Learning  
+- **Definição**: Redes neurais artificiais com múltiplas camadas
+- **Especialidade**: Reconhecimento de padrões complexos
+- **Aplicações**: Visão computacional, NLP, speech recognition
+
+#### Large Language Models (LLMs)
+
+##### O que são LLMs?
+
+**Large Language Models** são modelos de IA treinados em grandes volumes de texto para compreender e gerar linguagem natural.
+
+```
+🔬 CARACTERÍSTICAS DOS LLMS:
+├── 📚 Treinamento: Bilhões de parâmetros e petabytes de texto
+├── 🌍 Multilíngues: Suportam dezenas de idiomas
+├── 🎯 Multimodal: Texto, imagem, áudio (modelos avançados)
+├── 🔄 Few-shot Learning: Aprendem com poucos exemplos
+├── 🧠 Reasoning: Capacidade de raciocínio e inferência
+└── 💬 Conversational: Mantêm contexto em diálogos
+```
+
+##### Evolução dos LLMs
+
+```
+📈 TIMELINE DOS LLMS:
+2017: Transformer (Attention is All You Need)
+2018: BERT (Bidirectional Encoder)
+2019: GPT-2 (Generative Pre-trained Transformer)
+2020: GPT-3 (175B parâmetros)
+2022: ChatGPT (GPT-3.5 + RLHF)
+2023: GPT-4, PaLM 2, Claude 2
+2024: Gemini, GPT-4 Turbo, Claude 3
+```
+
+#### Por que IA no Fintelli?
+
+```
+💰 CASOS DE USO EM FINTECH:
+├── 📄 Processamento de Documentos
+│   ├── Extração de dados de faturas
+│   ├── Análise de comprovantes
+│   └── OCR inteligente
+├── 📊 Análise Financeira
+│   ├── Categorização automática de gastos
+│   ├── Detecção de padrões de consumo
+│   └── Previsão de fluxo de caixa
+├── 🛡️ Segurança e Fraude
+│   ├── Detecção de anomalias
+│   ├── Análise comportamental
+│   └── Score de risco
+├── 🤖 Assistência ao Cliente
+│   ├── Chatbots inteligentes
+│   ├── Recomendações personalizadas
+│   └── Suporte automatizado
+└── 📈 Business Intelligence
+    ├── Relatórios automatizados
+    ├── Insights sobre dados
+    └── Projeções financeiras
+```
+
+### 🚀 Google Gemini API
+
+#### O que é o Google Gemini?
+
+O **Gemini** é a mais recente família de LLMs do Google, projetada para ser **multimodal** (texto, imagem, áudio, vídeo) e altamente eficiente.
+
+```
+🌟 MODELOS GEMINI:
+├── 🏆 Gemini Ultra: Modelo mais poderoso para tarefas complexas
+├── ⚡ Gemini Pro: Equilibrio entre performance e velocidade
+└── 📱 Gemini Nano: Otimizado para dispositivos móveis
+```
+
+#### Por que Escolhemos Gemini?
+
+```
+✅ VANTAGENS DO GEMINI:
+├── 🌍 Multimodal: Processa texto, imagem, PDF simultaneamente
+├── ⚡ Performance: Latência baixa e throughput alto
+├── 🔒 Segurança: Safety filters e responsible AI
+├── 💰 Custo-benefício: Preços competitivos
+├── 🔧 API Simples: Integração fácil e documentação clara
+├── 🌐 Disponibilidade: Suporte global e SLA garantido
+└── 🔄 Atualizações: Melhorias constantes do modelo
+```
+
+#### Integração Técnica
+
+##### Configuração Básica
 ```python
 import google.generativeai as genai
+import os
+from typing import Dict, Any
+import json
 
+# Configuração da API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Inicialização do modelo
+model = genai.GenerativeModel('gemini-1.5-flash')
+```
+
+##### Processamento de Documentos Financeiros
+```python
 @app.post("/api/analyze-invoice")
 async def analyze_invoice(file: UploadFile = File(...)):
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    genai.configure(api_key=GEMINI_API_KEY)
-    
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    
-    # Ler arquivo PDF
-    pdf_content = await file.read()
-    
-    # Prompt estruturado
-    prompt = """
-    Analise esta fatura e extraia as seguintes informações em formato JSON:
-    {
-        "fornecedor": "Nome do fornecedor",
-        "valor_total": 0.00,
-        "data_vencimento": "YYYY-MM-DD",
-        "itens": [
-            {"descricao": "Item", "valor": 0.00}
-        ]
-    }
     """
-    
-    response = model.generate_content([
-        prompt,
-        {"mime_type": "application/pdf", "data": pdf_content}
-    ])
-    
-    # Parse da resposta
-    cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
-    return json.loads(cleaned_response)
-```
+    Analisa faturas usando Gemini para extrair dados estruturados
+    """
+    try:
+        # Ler conteúdo do arquivo
+        file_content = await file.read()
+        
+        # Prompt estruturado para extração de dados
+        prompt = """
+        Você é um especialista em análise de documentos financeiros.
+        Analise este documento e extraia as informações em formato JSON:
 
-#### Casos de Uso em Fintech
-- **Análise de Documentos**: Extrair dados de faturas, recibos
-- **Categorização Automática**: Classificar transações
-- **Detecção de Anomalias**: Identificar gastos suspeitos
-- **Assistente Virtual**: Responder perguntas sobre finanças
+        {
+            "fornecedor": {
+                "nome": "Nome do fornecedor",
+                "cnpj": "XX.XXX.XXX/XXXX-XX",
+                "endereco": "Endereço completo"
+            },
+            "fatura": {
+                "numero": "Número da fatura",
+                "data_emissao": "YYYY-MM-DD",
+                "data_vencimento": "YYYY-MM-DD",
+                "valor_total": 0.00,
+                "impostos": 0.00
+            },
+            "itens": [
+                {
+                    "descricao": "Descrição do item",
+                    "quantidade": 1,
+                    "valor_unitario": 0.00,
+                    "valor_total": 0.00
+                }
+            ],
+            "categoria_sugerida": "categoria automática baseada no conteúdo"
+        }
 
-### Prompt Engineering
-
-#### Boas Práticas
-- **Seja Específico**: Defina claramente o formato esperado
-- **Use Exemplos**: Forneça exemplos do output desejado
-- **Estruture o Contexto**: Organize informações hierarquicamente
-- **Valide Respostas**: Sempre valide a saída da IA
-
----
-
-## 🧪 Testes e Qualidade {#testes}
-
-### Pirâmide de Testes
-
-```
-    /\
-   /  \  E2E Tests (Poucos, Lentos, Caros)
-  /____\
- /      \  Integration Tests (Médios)
-/________\
-\        / Unit Tests (Muitos, Rápidos, Baratos)
- \______/
-```
-
-### Testes de Frontend com React Testing Library
-
-#### Filosofia
-- **Teste como Usuário**: Foque na interação do usuário
-- **Evite Detalhes de Implementação**: Teste comportamento, não código
-- **Accessibility**: Encontre elementos como usuários com deficiência
-
-#### Exemplo Prático
-```typescript
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { TransactionForm } from './TransactionForm';
-
-test('submete formulário com dados corretos', async () => {
-    const user = userEvent.setup();
-    const mockOnAdd = jest.fn();
-    
-    render(<TransactionForm onTransactionAdded={mockOnAdd} />);
-    
-    // Simula interação do usuário
-    await user.type(screen.getByLabelText(/descrição/i), 'Salário');
-    await user.type(screen.getByLabelText(/valor/i), '5000');
-    await user.click(screen.getByRole('button', { name: /adicionar/i }));
-    
-    // Verifica resultado
-    await waitFor(() => {
-        expect(mockOnAdd).toHaveBeenCalled();
-    });
-});
-```
-
-### Testes de Backend com Pytest
-
-#### Estrutura de Testes
-```python
-import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-
-class TestTransactionsAPI:
-    """Testes para endpoints de transações"""
-    
-    @pytest.fixture
-    def client(self):
-        return TestClient(app)
-    
-    def test_add_transaction_success(self, client):
-        """Testa adição de transação com sucesso"""
-        with patch('main.get_db_connection') as mock_db:
-            # Setup do mock
-            mock_conn = MagicMock()
-            mock_cursor = MagicMock()
-            mock_cursor.fetchone.return_value = {'id': 1}
-            mock_db.return_value = mock_conn
-            
-            # Dados de teste
-            transaction_data = {
-                "description": "Salário",
-                "amount": 5000.00,
-                "transaction_date": "2024-06-14"
+        Se alguma informação não estiver disponível, use null.
+        Retorne APENAS o JSON, sem explicações adicionais.
+        """
+        
+        # Chamada para o modelo
+        response = model.generate_content([
+            prompt,
+            {
+                "mime_type": file.content_type,
+                "data": file_content
             }
+        ])
+        
+        # Parse e validação da resposta
+        cleaned_response = response.text.strip()
+        # Remove marcadores de código se presentes
+        if cleaned_response.startswith("```"):
+            cleaned_response = cleaned_response.split("\n", 1)[1]
+        if cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response.rsplit("\n", 1)[0]
             
-            # Executar teste
-            response = client.post("/api/transactions", json=transaction_data)
-            
-            # Verificações
-            assert response.status_code == 201
-            data = response.json()
-            assert data["description"] == "Salário"
-            assert data["amount"] == 5000.00
-```
-
-### Testes de Integração
-
-#### Docker para Testes
-```bash
-#!/bin/bash
-# Script de teste de integração
-
-# Subir ambiente de teste
-docker-compose -f docker-compose.test.yml up -d
-
-# Aguardar serviços
-sleep 30
-
-# Executar testes
-pytest tests/integration/ -v
-
-# Limpar ambiente
-docker-compose -f docker-compose.test.yml down -v
-```
-
-### Testes de Performance
-
-#### K6 para Load Testing
-```javascript
-import http from 'k6/http';
-import { check } from 'k6';
-
-export let options = {
-    stages: [
-        { duration: '2m', target: 100 }, // Ramp up
-        { duration: '5m', target: 100 }, // Stay at 100 users
-        { duration: '2m', target: 0 },   // Ramp down
-    ],
-};
-
-export default function() {
-    // Teste de criação de transação
-    let payload = JSON.stringify({
-        description: 'Load Test',
-        amount: 100.00,
-        transaction_date: '2024-06-14'
-    });
-    
-    let response = http.post('http://localhost:8001/api/transactions', payload, {
-        headers: { 'Content-Type': 'application/json' },
-    });
-    
-    check(response, {
-        'status is 201': (r) => r.status === 201,
-        'response time < 500ms': (r) => r.timings.duration < 500,
-    });
-}
-```
-
----
-
-## 🧪 Validações e Monitoramento {#validacoes}
-
-### Guia Completo de Testes e Validações
-
-Esta seção fornece um overview completo de como testar e validar cada componente do Fintelli, garantindo que todos os sistemas estejam funcionando corretamente.
-
----
-
-### 🎨 Testes de Frontend
-
-#### Configuração do Ambiente de Testes
-
-O frontend utiliza **Jest** e **React Testing Library** para testes unitários:
-
-```bash
-cd tests/frontend
-npm install
-npm test
-```
-
-#### Estrutura de Testes Frontend
-
-```
-tests/frontend/
-├── src/
-│   ├── components/          # Testes de componentes
-│   │   ├── TransactionForm.test.tsx
-│   │   ├── TransactionList.test.tsx
-│   │   └── SummaryCard.test.tsx
-│   ├── utils/               # Testes de utilitários
-│   │   └── javascript.test.ts
-│   └── setupTests.ts        # Configuração global
-├── integration/             # Testes de integração
-│   └── api.test.ts         # Testes de API
-└── package.json
-```
-
-#### Exemplo de Teste de Componente
-
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import { TransactionForm } from '../../../src/frontend/src/components/TransactionForm';
-
-describe('TransactionForm', () => {
-    test('renderiza o formulário corretamente', () => {
-        render(<TransactionForm onTransactionAdded={jest.fn()} />);
+        parsed_data = json.loads(cleaned_response)
         
-        expect(screen.getByText('Adicionar Lançamento')).toBeInTheDocument();
-        expect(screen.getByLabelText(/tipo/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/descrição/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/valor/i)).toBeInTheDocument();
-    });
-    
-    test('valida dados antes do envio', async () => {
-        const mockCallback = jest.fn();
-        render(<TransactionForm onTransactionAdded={mockCallback} />);
-        
-        const submitButton = screen.getByRole('button', { name: /adicionar/i });
-        fireEvent.click(submitButton);
-        
-        // Verifica se validação impede envio com dados vazios
-        expect(mockCallback).not.toHaveBeenCalled();
-    });
-});
-```
-
-#### Comandos de Teste Frontend
-
-```bash
-# Executar todos os testes
-npm test
-
-# Modo watch (desenvolvimento)
-npm run test:watch
-
-# Relatório de cobertura
-npm run test:coverage
-
-# Testes específicos
-npm run test:unit         # Apenas testes unitários
-npm run test:integration  # Apenas testes de integração
-```
-
----
-
-### ⚙️ Testes de Backend
-
-#### Configuração do Ambiente Backend
-
-O backend utiliza **pytest** para testes:
-
-```bash
-cd tests/backend
-pip install -r requirements.txt
-pytest
-```
-
-#### Estrutura de Testes Backend
-
-```
-tests/backend/
-├── test_api.py           # Testes de API
-├── test_database.py      # Testes de banco de dados
-├── test_redis.py         # Testes de cache
-├── test_prometheus.py    # Testes de métricas
-├── test_jaeger.py        # Testes de traces
-├── test_opentelemetry.py # Testes de telemetria
-├── test_docker.py        # Testes de containerização
-└── requirements.txt
-```
-
-#### Exemplo de Teste de API
-
-```python
-import pytest
-from fastapi.testclient import TestClient
-from main import app
-
-client = TestClient(app)
-
-class TestTransactionsAPI:
-    def test_get_summary_empty_database(self):
-        """Testa o resumo com banco vazio"""
-        response = client.get("/api/summary")
-        assert response.status_code == 200
-        
-        data = response.json()
-        assert data == {"income": 0, "expense": 0, "balance": 0}
-    
-    def test_create_transaction(self):
-        """Testa criação de transação"""
-        transaction_data = {
-            "type": "income",
-            "description": "Salário",
-            "amount": 5000,
-            "date": "2024-01-15"
+        return {
+            "success": True,
+            "data": parsed_data,
+            "confidence": "high"  # Poderia ser calculado baseado na resposta
         }
         
-        response = client.post("/api/transactions", json=transaction_data)
-        assert response.status_code == 201
-        
-        created = response.json()
-        assert created["type"] == transaction_data["type"]
-        assert created["amount"] == transaction_data["amount"]
+    except json.JSONDecodeError as e:
+        return {
+            "success": False,
+            "error": "Não foi possível processar o documento",
+            "details": str(e)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": "Erro interno na análise",
+            "details": str(e)
+        }
 ```
 
-#### Comandos de Teste Backend
+### 🎯 Prompt Engineering
 
-```bash
-# Executar todos os testes
-pytest
+#### O que é Prompt Engineering?
 
-# Teste específico
-pytest test_api.py
+**Prompt Engineering** é a arte e ciência de criar instruções eficazes para modelos de linguagem, maximizando a qualidade e precisão das respostas.
 
-# Relatório de cobertura
-pytest --cov=app --cov-report=html
+#### Técnicas Fundamentais
 
-# Testes em paralelo
-pytest -n auto
-```
-
----
-
-### 🔍 Consultas de Endpoint na API
-
-#### Testando Endpoints Manualmente
-
-```bash
-# Health check
-curl http://localhost:8001/health
-
-# Resumo financeiro
-curl http://localhost:8001/api/summary
-
-# Lista de transações
-curl http://localhost:8001/api/transactions
-
-# Criar transação
-curl -X POST http://localhost:8001/api/transactions \
-  -H "Content-Type: application/json" \
-  -d '{"type":"income","description":"Teste","amount":100,"date":"2024-01-15"}'
-
-# Deletar transação
-curl -X DELETE http://localhost:8001/api/transactions/1
-```
-
-#### Testando com HTTPie (mais legível)
-
-```bash
-# Instalar HTTPie
-pip install httpie
-
-# Consultas
-http GET localhost:8001/api/summary
-http GET localhost:8001/api/transactions
-
-# Criar transação
-http POST localhost:8001/api/transactions \
-  type=income description="Freelance" amount:=1500 date="2024-01-15"
-```
-
-#### Documentação Interativa
-
-Acesse a documentação automática da API:
-- **Swagger UI**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
-
----
-
-### 🗄️ Validações no PostgreSQL
-
-#### Conexão Manual com o Banco
-
-```bash
-# Via Docker
-docker exec -it fintelli_db psql -U finance_user -d finance_db
-
-# Via cliente local (se instalado)
-psql -h localhost -p 5432 -U finance_user -d finance_db
-```
-
-#### Consultas de Validação
-
-```sql
--- Verificar estrutura das tabelas
-\dt
-
--- Verificar dados de transações
-SELECT * FROM transactions ORDER BY created_at DESC LIMIT 10;
-
--- Verificar resumo financeiro
-SELECT 
-    SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
-    SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) as expense,
-    SUM(amount) as balance
-FROM transactions;
-
--- Verificar integridade dos dados
-SELECT 
-    COUNT(*) as total_transactions,
-    COUNT(CASE WHEN amount > 0 THEN 1 END) as income_count,
-    COUNT(CASE WHEN amount < 0 THEN 1 END) as expense_count
-FROM transactions;
-
--- Verificar performance
-EXPLAIN ANALYZE SELECT * FROM transactions WHERE date >= '2024-01-01';
-```
-
-#### Teste de Backup e Restore
-
-```bash
-# Criar backup
-docker exec fintelli_db pg_dump -U finance_user finance_db > backup.sql
-
-# Restaurar backup
-docker exec -i fintelli_db psql -U finance_user finance_db < backup.sql
-```
-
----
-
-### ⚡ Validações no Redis
-
-#### Conexão Manual com Redis
-
-```bash
-# Via Docker
-docker exec -it fintelli_cache redis-cli
-
-# Via cliente local
-redis-cli -h localhost -p 6379
-```
-
-#### Comandos de Validação Redis
-
-```bash
-# Verificar status
-INFO server
-
-# Verificar memória
-INFO memory
-
-# Listar todas as chaves
-KEYS *
-
-# Verificar chaves do Fintelli
-KEYS fintelli:*
-
-# Verificar valor de cache
-GET fintelli:summary
-
-# Verificar TTL (time to live)
-TTL fintelli:summary
-
-# Verificar estatísticas
-INFO stats
-
-# Limpar cache (cuidado!)
-FLUSHDB
-```
-
-#### Teste de Performance Redis
-
-```bash
-# Benchmark básico
-redis-benchmark -h localhost -p 6379 -n 10000 -c 50
-
-# Teste de latência
-redis-cli --latency -h localhost -p 6379
-```
-
----
-
-### 📈 Validações no Prometheus
-
-#### Acessando o Prometheus
-
-**URL**: http://localhost:9091
-
-#### Consultas de Validação (PromQL)
-
-```promql
-# Verificar se serviços estão up
-up
-
-# Métricas HTTP do backend
-http_server_duration_seconds
-
-# Contadores de transações criadas
-transactions_created_total
-
-# Taxa de criação de transações (por minuto)
-rate(transactions_created_total[1m])
-
-# Uso de memória do processo Python
-process_resident_memory_bytes
-
-# Conexões ativas do banco
-database_connections_active
-
-# Latência P95 das requisições HTTP
-histogram_quantile(0.95, http_server_duration_seconds_bucket)
-```
-
-#### Testando Alerts
-
-```promql
-# Alta latência (> 1 segundo)
-histogram_quantile(0.95, http_server_duration_seconds_bucket) > 1
-
-# Muitas requisições com erro
-rate(http_server_requests_total{status=~"5.."}[5m]) > 0.1
-
-# Serviço down
-up == 0
-```
-
-#### Verificação de Targets
-
-1. Acesse: http://localhost:9091/targets
-2. Verifique se todos os endpoints estão **UP**
-3. Confirme última coleta de métricas
-
----
-
-### 🔍 Validações no Jaeger
-
-#### Acessando o Jaeger
-
-**URL**: http://localhost:16687
-
-#### Validações de Traces
-
-1. **Serviços Disponíveis**
-   - Acesse "Services" no menu
-   - Verifique se `fintelli-backend` e `fintelli-frontend` aparecem
-
-2. **Buscar Traces**
-   - Selecione um serviço
-   - Defina intervalo de tempo (últimas 1h)
-   - Clique em "Find Traces"
-
-3. **Analisar Trace Individual**
-   - Clique em um trace
-   - Verifique spans
-   - Confirme propagação entre serviços
-
-#### Consultas de Validação via API
-
-```bash
-# Listar serviços
-curl http://localhost:16687/api/services
-
-# Buscar traces dos últimos 1 hora
-curl "http://localhost:16687/api/traces?service=fintelli-backend&start=$(date -d '1 hour ago' +%s)000000&end=$(date +%s)000000"
-
-# Obter operações de um serviço
-curl http://localhost:16687/api/services/fintelli-backend/operations
-```
-
-#### Métricas de Qualidade dos Traces
-
-- **Completude**: Todos os spans necessários presentes
-- **Precisão**: Timestamps e durações corretos
-- **Context Propagation**: Headers de trace propagados
-- **Error Tracking**: Erros marcados nos spans
-
----
-
-### 🛠️ Validações do OpenTelemetry
-
-#### Verificando o OTel Collector
-
-```bash
-# Status do collector
-curl http://localhost:8889/metrics
-
-# Verificar configuração
-docker exec fintelli_otel_collector cat /etc/otel-collector-config.yml
-```
-
-#### Métricas do Collector
-
-```bash
-# Spans recebidos
-curl -s http://localhost:8889/metrics | grep "otelcol_receiver_accepted_spans"
-
-# Spans enviados
-curl -s http://localhost:8889/metrics | grep "otelcol_exporter_sent_spans"
-
-# Spans rejeitados
-curl -s http://localhost:8889/metrics | grep "otelcol_processor_refused_spans"
-```
-
-#### Testando Instrumentação
-
-##### Backend (Python)
+##### 1. 🎯 Especificidade e Clareza
 ```python
-# Verificar se instrumentação está ativa
-from opentelemetry import trace
+# ❌ Prompt vago
+"Analise este documento"
 
-tracer = trace.get_tracer(__name__)
-print(f"Tracer ativo: {tracer}")
+# ✅ Prompt específico
+"""
+Analise esta fatura e extraia:
+1. Nome do fornecedor
+2. Valor total (em formato numérico)
+3. Data de vencimento (formato YYYY-MM-DD)
+4. Lista de itens com descrição e valor
 
-# Criar span manualmente
-with tracer.start_as_current_span("test_span") as span:
-    span.set_attribute("test.key", "test.value")
-    print("Span criado com sucesso")
+Retorne em formato JSON estruturado.
+"""
 ```
 
-##### Frontend (JavaScript)
-```javascript
-// Verificar se telemetria está carregada
-console.log(window.opentelemetry);
+##### 2. 📝 Few-Shot Learning
+```python
+prompt = """
+Categorize as seguintes transações financeiras:
 
-// Verificar provider de traces
-console.log(window.opentelemetry?.trace?.getActiveTracer());
+Exemplos:
+"Pagamento Uber" → Categoria: "Transporte"
+"Supermercado Extra" → Categoria: "Alimentação"
+"Farmácia Droga Raia" → Categoria: "Saúde"
+
+Agora categorize:
+"{transaction_description}" → Categoria: ?
+"""
 ```
 
----
+##### 3. 🔄 Chain of Thought
+```python
+prompt = """
+Analise esta despesa e determine se é suspeita:
 
-### 🐳 Build com Docker Compose
+Dados: {transaction_data}
 
-#### Comandos de Validação
+Processo de análise:
+1. Compare com padrão histórico do usuário
+2. Verifique se valor está dentro do esperado  
+3. Analise horário e localização
+4. Considere categoria da transação
+5. Dê uma pontuação de risco (0-100)
 
-```bash
-# Verificar sintaxe
-docker-compose config
-
-# Build completo
-docker-compose build --no-cache
-
-# Subir serviços
-docker-compose up -d
-
-# Verificar status
-docker-compose ps
-
-# Verificar logs
-docker-compose logs -f
-
-# Verificar recursos
-docker stats
-
-# Parar e limpar
-docker-compose down -v
+Conclusão: [Normal/Suspeita] - Justificativa:
+"""
 ```
 
-#### Troubleshooting Docker
-
-```bash
-# Verificar imagens
-docker images | grep fintelli
-
-# Verificar volumes
-docker volume ls | grep fintelli
-
-# Verificar redes
-docker network ls | grep fintelli
-
-# Limpar recursos órfãos
-docker system prune -f
-
-# Verificar uso de disco
-docker system df
-```
-
-#### Health Checks
-
-```bash
-# Verificar health de todos os containers
-docker-compose ps --services --filter "status=running" | xargs -I {} docker inspect --format='{{.Name}}: {{.State.Health.Status}}' fintelli_{}
-```
-
----
-
-### 📋 Consulta de Logs do Frontend e Backend
-
-#### Logs do Frontend (Nginx)
-
-```bash
-# Logs em tempo real
-docker-compose logs -f frontend
-
-# Logs específicos do nginx
-docker exec fintelli_frontend cat /var/log/nginx/access.log
-docker exec fintelli_frontend cat /var/log/nginx/error.log
-
-# Filtrar por código de status
-docker-compose logs frontend | grep " 404 "
-docker-compose logs frontend | grep " 500 "
-```
-
-#### Logs do Backend (Python/FastAPI)
-
-```bash
-# Logs em tempo real
-docker-compose logs -f backend
-
-# Logs de aplicação
-docker exec fintelli_backend cat /app/logs/application.log
-
-# Filtrar por nível de log
-docker-compose logs backend | grep ERROR
-docker-compose logs backend | grep WARNING
-```
-
-#### Análise de Logs
-
-```bash
-# Contagem de requisições por endpoint
-docker-compose logs backend | grep "GET\|POST\|PUT\|DELETE" | awk '{print $NF}' | sort | uniq -c
-
-# Requisições mais lentas
-docker-compose logs backend | grep "duration" | sort -k5 -nr | head -10
-
-# Erros mais frequentes
-docker-compose logs backend | grep ERROR | awk '{print $NF}' | sort | uniq -c | sort -nr
-```
-
-#### Configuração de Log Rotation
-
-```bash
-# Verificar tamanho dos logs
-docker exec fintelli_backend du -sh /var/log/
-
-# Configurar logrotate (se necessário)
-echo '/var/log/nginx/*.log {
-    daily
-    missingok
-    rotate 52
-    compress
-    delaycompress
-    notifempty
-    create 644 nginx nginx
-    postrotate
-        nginx -s reload
-    endscript
-}' > /etc/logrotate.d/nginx
-```
-
----
-
-### 🎯 Testes de JavaScript
-
-#### Testes de Utilitários
-
-```javascript
-// Formatação de moeda
-test('formatCurrency', () => {
-    expect(formatCurrency(1000)).toBe('R$ 1.000,00');
-    expect(formatCurrency(-500)).toBe('-R$ 500,00');
-    expect(formatCurrency(0)).toBe('R$ 0,00');
-});
-
-// Validação de transação
-test('validateTransaction', () => {
-    const valid = {
-        type: 'income',
-        description: 'Salário',
-        amount: 5000,
-        date: '2024-01-15'
-    };
-    
-    expect(validateTransaction(valid).isValid).toBe(true);
-    
-    const invalid = {
-        type: 'income',
-        description: '',
-        amount: -5000,
-        date: '2024-01-32'
-    };
-    
-    expect(validateTransaction(invalid).isValid).toBe(false);
-});
-
-// Cálculo de resumo
-test('calculateSummary', () => {
-    const transactions = [
-        { type: 'income', amount: 1000 },
-        { type: 'expense', amount: -300 }
-    ];
-    
-    const summary = calculateSummary(transactions);
-    expect(summary.balance).toBe(700);
-    expect(summary.income).toBe(1000);
-    expect(summary.expense).toBe(300);
-});
-```
-
-#### Testes de Integração API
-
-```javascript
-test('API Integration', async () => {
-    // Teste de health check
-    const health = await fetch('http://localhost:8001/health');
-    expect(health.status).toBe(200);
-    
-    // Teste de endpoint de resumo
-    const summary = await fetch('http://localhost:8001/api/summary');
-    const data = await summary.json();
-    
-    expect(data).toHaveProperty('income');
-    expect(data).toHaveProperty('expense');
-    expect(data).toHaveProperty('balance');
-    
-    // Teste de criação de transação
-    const transaction = await fetch('http://localhost:8001/api/transactions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            type: 'income',
-            description: 'Teste',
-            amount: 100,
-            date: '2024-01-15'
-        }),
-    });
-    
-    const transactionData = await transaction.json();
-    expect(transaction.status).toBe(201);
-    expect(transactionData).toHaveProperty('id');
-});
-```
-
-#### Performance Testing
-
-```javascript
-test('Performance Test', async () => {
-    const start = Date.now();
-    
-    // Múltiplas requisições paralelas
-    const promises = Array(10).fill().map(() => 
-        fetch('http://localhost:8001/api/summary')
-    );
-    
-    await Promise.all(promises);
-    
-    const duration = Date.now() - start;
-    expect(duration).toBeLessThan(5000); // 5 segundos
-});
-```
-
----
-
-### 🚀 Script de Testes Automatizados
-
-#### Executando Todos os Testes
-
-```bash
-# Script principal de integração
-./tests/integration/run_tests.sh
-
-# Testes individuais
-./tests/integration/run_tests.sh test_frontend
-./tests/integration/run_tests.sh test_backend
-./tests/integration/run_tests.sh test_database
-```
-
-#### Relatório de Testes
-
-O script gera um relatório completo incluindo:
-
-- ✅ **Status dos Containers**: Todos os serviços rodando
-- ✅ **Health Checks**: APIs respondendo corretamente
-- ✅ **Conectividade**: Comunicação entre serviços
-- ✅ **Persistência**: Banco de dados operacional
-- ✅ **Cache**: Redis funcionando
-- ✅ **Observabilidade**: Métricas e traces sendo coletados
-- ✅ **Frontend**: Interface carregando corretamente
-- ✅ **Logs**: Acessibilidade e análise de logs
-
-#### Exemplo de Saída
+#### Boas Práticas de Prompt Engineering
 
 ```
-🚀 Iniciando Testes de Integração do Fintelli
-==============================================
-
-[INFO] Verificando containers Docker...
-[SUCCESS] Container fintelli_frontend está rodando
-[SUCCESS] Container fintelli_backend está rodando
-[SUCCESS] Container fintelli_db está rodando
-[SUCCESS] Container fintelli_cache está rodando
-
-[INFO] Testando Frontend em http://localhost:8080
-[SUCCESS] Frontend está funcionando
-
-[INFO] Testando endpoints da API...
-[SUCCESS] Endpoint /api/summary retornou dados válidos
-[SUCCESS] Endpoint /api/transactions retornou dados válidos
-
-[INFO] Testando PostgreSQL...
-[SUCCESS] Conexão com PostgreSQL estabelecida
-[SUCCESS] Tabelas existem e estão acessíveis
-
-[INFO] Testando Redis...
-[SUCCESS] Redis está funcionando corretamente
-
-[INFO] Testando OpenTelemetry...
-[SUCCESS] Métricas do OTel Collector encontradas
-[SUCCESS] Serviços encontrados no Jaeger
-
-==============================================
-[SUCCESS] Todos os testes de integração passaram! 🎉
-Fintelli está funcionando perfeitamente!
-==============================================
+🏆 MELHORES PRÁTICAS:
+├── 📋 Estrutura Clara: Use formato consistente
+├── 🎯 Objetivo Específico: Uma tarefa por prompt
+├── 📊 Formato de Saída: Especifique JSON, tabela, etc.
+├── 🔍 Exemplos: Inclua few-shot examples
+├── ⚠️ Tratamento de Erros: Considere casos extremos
+├── 🧪 Iteração: Teste e refine continuamente
+├── 📏 Comprimento: Balance entre contexto e eficiência
+└── 🔒 Segurança: Evite prompt injection
 ```
-
----
-
-### 📊 Monitoramento Contínuo
-
-#### Dashboards Grafana
-
-Acesse http://localhost:3000 (admin/admin) e configure dashboards para:
-
-1. **Métricas de Aplicação**
-   - Taxa de requisições
-   - Latência P95
-   - Taxa de erro
-   - Throughput
-
-2. **Métricas de Sistema**
-   - CPU e memória
-   - Disk I/O
-   - Network I/O
-   - Container health
-
-3. **Métricas de Negócio**
-   - Transações criadas por período
-   - Volume financeiro processado
-   - Usuários ativos
-   - Operações por tipo
-
-#### Alertas
-
-Configure alertas para:
-- Latência alta (> 1s)
-- Taxa de erro alta (> 5%)
-- Serviços down
-- Uso de memória alto (> 80%)
-- Disk space baixo (< 10%)
-
----
-
-## 💡 Dicas de Troubleshooting
-
-### Problemas Comuns
-
-#### 1. Container não sobe
-```bash
-# Verificar logs
-docker-compose logs [nome_do_servico]
-
-# Verificar recursos
-docker system df
-
-# Limpar e rebuild
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-#### 2. API não responde
-```bash
-# Verificar se porta está livre
-netstat -tulpn | grep :8001
-
-# Verificar logs do backend
-docker-compose logs backend
-
-# Testar conectividade
-curl -v http://localhost:8001/health
-```
-
-#### 3. Banco de dados inacessível
-```bash
-# Verificar container
-docker-compose ps db
-
-# Verificar logs
-docker-compose logs db
-
-# Testar conexão
-docker exec -it fintelli_db psql -U finance_user -d finance_db
-```
-
-#### 4. Observabilidade não funciona
-```bash
-# Verificar OTel Collector
-curl http://localhost:8889/metrics
-
-# Verificar Jaeger
-curl http://localhost:16687/api/services
-
-# Verificar Prometheus
-curl http://localhost:9091/api/v1/query?query=up
-```
-
----
