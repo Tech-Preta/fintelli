@@ -6,28 +6,28 @@ Esta é uma aplicação full-stack para gerenciamento de finanças pessoais com 
 
 ```mermaid
 graph TD
-    subgraph "🌐 Ambiente Externo"
+    subgraph External["🌐 AMBIENTE EXTERNO"]
         User["👤 Usuário via Browser"]
     end
 
-    subgraph "🐳 Docker Environment"
-        subgraph "📱 Frontend Layer"
+    subgraph Docker["🐳 DOCKER ENVIRONMENT"]
+        subgraph FrontendLayer["📱 FRONTEND LAYER"]
             Frontend["🌐 Frontend<br/>(React + Nginx)"]
         end
 
-        subgraph "⚙️ Backend Layer"
+        subgraph BackendLayer["⚙️ BACKEND LAYER"]
             Backend["🔧 Backend<br/>(FastAPI + Python)"]
         end
 
-        subgraph "💾 Data Layer"
+        subgraph DataLayer["💾 DATA LAYER"]
             Postgres["🗄️ PostgreSQL<br/>(Database)"]
             Redis["⚡ Redis<br/>(Cache)"]
         end
 
-        subgraph "📊 Observability Stack"
+        subgraph ObsStack["📊 OBSERVABILITY STACK"]
             OTel["📡 OTel Collector<br/>(Telemetry)"]
             
-            subgraph "📈 Monitoring"
+            subgraph Monitoring["📈 MONITORING TOOLS"]
                 Jaeger["🔍 Jaeger<br/>(Traces)"]
                 Grafana["📊 Grafana<br/>(Dashboards)"]
                 Prometheus["📈 Prometheus<br/>(Metrics)"]
@@ -50,12 +50,12 @@ graph TD
     OTel -->|Export Metrics| Prometheus
     Grafana -->|Query| Prometheus
 
-    %% Styles
-    classDef userStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef frontendStyle fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef backendStyle fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef dataStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef obsStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    %% High Contrast Styles
+    classDef userStyle fill:#ffffff,stroke:#000000,stroke-width:3px,color:#000000
+    classDef frontendStyle fill:#c8e6c9,stroke:#1b5e20,stroke-width:3px,color:#000000
+    classDef backendStyle fill:#ffcc80,stroke:#bf360c,stroke-width:3px,color:#000000
+    classDef dataStyle fill:#ce93d8,stroke:#4a148c,stroke-width:3px,color:#000000
+    classDef obsStyle fill:#f8bbd9,stroke:#880e4f,stroke-width:3px,color:#000000
     
     class User userStyle
     class Frontend frontendStyle
