@@ -38,7 +38,7 @@ processors:
 exporters:
   # Exportador para o Jaeger (Traces) via OTLP
   otlp/jaeger:
-    endpoint: 172.19.0.7:4319
+    endpoint: jaeger:4319
     tls:
       insecure: true
 

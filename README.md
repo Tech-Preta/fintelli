@@ -1,6 +1,8 @@
 # 🧠 Fintelli - Finanças Inteligentes com IA
 
-Esta é uma aplicação full-stack para gerenciamento de finanças pessoais com inteligência artificial, totalmente containerizada com Docker e instrumentada com **OpenTelemetry** para observabilidade completa.
+## 🎉 **Versão 1.0.0 - Stack Completo de Observabilidade Fintech**
+
+Esta é uma aplicação full-stack para gerenciamento de finanças pessoais com inteligência artificial, totalmente containerizada com Docker e instrumentada com **OpenTelemetry** para observabilidade completa. Inclui **Service Performance Monitoring (SPM)** avançado, alertas inteligentes e documentação técnica abrangente.
 
 ## 🏗️ Diagrama de Arquitetura
 
@@ -86,23 +88,51 @@ graph TD
 
 ```
 fintelli/
-├── backend/
-│   ├── app/
-│   │   ├── instrumentation.py  # Configuração do OpenTelemetry
-│   │   └── main.py
-│   ├── Dockerfile
-│   └── requirements.txt
-├── frontend/
-│   ├── index.html
-│   ├── telemetry.js            # Instrumentação OTel do Frontend
-│   ├── Dockerfile
-│   └── nginx.conf
+├── src/
+│   ├── backend/
+│   │   ├── app/
+│   │   │   ├── instrumentation.py  # Configuração do OpenTelemetry
+│   │   │   └── main.py
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   └── frontend/
+│       ├── index.html
+│       ├── telemetry.js            # Instrumentação OTel do Frontend
+│       ├── package.json
+│       ├── vite.config.ts
+│       ├── Dockerfile
+│       ├── nginx.conf
+│       └── src/
+│           ├── App.tsx
+│           ├── main.tsx
+│           ├── components/
+│           └── services/
 ├── charts/
 │   └── fintelli/               # Helm Chart para Kubernetes
 ├── config/
-│   ├── otel-collector-config.yml  # Configuração do Collector
-│   └── prometheus.yml             # Configuração do Prometheus
+│   ├── otel-collector-config.yml     # Configuração do Collector
+│   ├── prometheus.yml                # Configuração do Prometheus
+│   ├── spm-alerts.yml                # Regras de alerta SPM
+│   ├── fintelli-enhanced-alerts.yml  # Alertas avançados
+│   ├── alertmanager.yml              # Configuração Alertmanager
+│   └── grafana-spm-dashboard.json    # Dashboard SPM
+├── docs/
+│   ├── EBOOK_TECNOLOGIAS_FINTELLI.md # E-book técnico completo
+│   ├── SPM_USER_GUIDE.md             # Guia do usuário SPM
+│   ├── TESTING_GUIDE.md              # Guia de testes
+│   ├── SECURITY_RECOMMENDATIONS.md   # Recomendações de segurança
+│   └── IMPLEMENTACAO_COMPLETA_RESUMO.md
+├── scripts/
+│   ├── generate_secrets.sh           # Geração de credenciais
+│   ├── security_check.sh             # Verificação de segurança
+│   └── validate_spm.sh               # Validação do stack SPM
+├── tests/
+│   ├── backend/                      # Testes Python/FastAPI
+│   ├── frontend/                     # Testes React/TypeScript
+│   └── integration/                  # Testes de integração
 ├── .env
+├── .env.example
+├── CHANGELOG.md
 └── docker-compose.yml
 ```
 
@@ -117,9 +147,13 @@ fintelli/
 Garanta que a estrutura de diretórios e todos os arquivos abaixo estejam criados.
 
 ### 2. Crie e configure o arquivo `.env`
-Na raiz do projeto, crie o arquivo `.env` com suas credenciais e adicione a chave da API do Gemini:
+Na raiz do projeto, crie o arquivo `.env` com suas credenciais ou use o script de geração automática:
 
 ```bash
+# Gerar credenciais seguras automaticamente
+./scripts/generate_secrets.sh
+
+# OU criar manualmente
 # Credenciais do Banco de Dados Postgres
 POSTGRES_DB=finance_db
 POSTGRES_USER=finance_user
@@ -141,10 +175,11 @@ docker-compose up --build
 | Serviço                   | URL                    | Descrição                       |
 | ------------------------- | ---------------------- | ------------------------------- |
 | **Aplicação de Finanças** | http://localhost:8080  | Interface principal             |
-| **Backend API**           | http://localhost:8001  | API FastAPI                     |
-| **Jaeger (Traces)**       | http://localhost:16687 | Visualização de traces          |
-| **Prometheus (Métricas)** | http://localhost:9091  | Coleta de métricas              |
+| **Backend API**           | http://localhost:8001  | API FastAPI + Documentação      |
+| **Jaeger (Traces)**       | http://localhost:16686 | Visualização de traces + SPM    |
+| **Prometheus (Métricas)** | http://localhost:9090  | Coleta de métricas              |
 | **Grafana (Dashboards)**  | http://localhost:3000  | Dashboards (login: admin/admin) |
+| **Alertmanager**          | http://localhost:9093  | Gestão de alertas               |
 
 ## 📊 Como Usar a Observabilidade
 
@@ -167,15 +202,16 @@ Adicione e remova algumas transações para gerar dados.
 
 ## 🎯 Service Performance Monitoring (SPM)
 
-O Fintelli agora possui **Service Performance Monitoring (SPM)** habilitado, que deriva automaticamente métricas de performance dos traces distribuídos coletados pelo OpenTelemetry.
+O Fintelli possui **Service Performance Monitoring (SPM)** avançado habilitado no Jaeger 1.51, que deriva automaticamente métricas de performance dos traces distribuídos coletados pelo OpenTelemetry.
 
 ### 🚀 Benefícios do SPM
 
 - **📊 Métricas Automáticas**: Rate, Errors, Duration (RED) geradas dos traces
 - **🔍 Visibilidade Completa**: Performance por endpoint, método HTTP e status
-- **⚡ Alertas Inteligentes**: Detecção proativa de degradação de performance
+- **⚡ Alertas Inteligentes**: 55+ regras de alerta categorizadas
 - **🎨 Dashboards Ricos**: Visualizações automáticas no Grafana
 - **🛡️ SLA Monitoring**: Monitoramento contínuo de disponibilidade e latência
+- **🔧 Detecção de Anomalias**: Identificação proativa de degradação
 
 ### 📈 Métricas SPM Disponíveis
 
@@ -191,6 +227,35 @@ rate(calls_total{status_code=~"5.."}[5m]) / rate(calls_total[5m])
 
 # Disponibilidade do serviço
 (1 - rate(calls_total{status_code=~"5.."}[5m]) / rate(calls_total[5m])) * 100
+```
+
+### 🎛️ Como Usar o SPM
+
+1. **Acesse o Jaeger**: http://localhost:16686
+2. **Vá para "Monitor"**: Seção Service Performance Monitoring
+3. **Explore Métricas**: Visualize latência, throughput e erros por serviço
+4. **Configure Alertas**: Use as regras em `config/spm-alerts.yml`
+5. **Dashboard Grafana**: Importe `config/grafana-spm-dashboard.json`
+
+### 📚 Documentação Completa
+
+- **[Guia do Usuário SPM](docs/SPM_USER_GUIDE.md)** - Tutorial completo
+- **[E-book Tecnologias](docs/EBOOK_TECNOLOGIAS_FINTELLI.md)** - Documentação técnica
+- **[Resumo da Implementação](docs/IMPLEMENTACAO_SPM_RESUMO.md)** - Visão executiva
+
+### 🔧 Validação do SPM
+
+```bash
+# Validar stack completo incluindo SPM
+./scripts/validate_spm.sh
+
+# Verificar coleta de métricas SPM
+curl "http://localhost:9090/api/v1/query?query=calls_total"
+
+# Gerar traces para teste
+curl -X POST http://localhost:8001/transactions/ \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 100.0, "description": "Test SPM"}'
 ```
 
 ## 🛠️ Tecnologias Utilizadas
@@ -226,9 +291,10 @@ rate(calls_total{status_code=~"5.."}[5m]) / rate(calls_total[5m])
 ### 📊 **OBSERVABILIDADE & MONITORAMENTO**
 #### **OpenTelemetry Stack**
 - ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-latest-425cc7?logo=opentelemetry&logoColor=white) - Observabilidade unificada
-- ![Jaeger](https://img.shields.io/badge/Jaeger-1.38-66d9ef?logo=jaeger&logoColor=white) - Distributed tracing
-- ![Prometheus](https://img.shields.io/badge/Prometheus-v2.37.0-e6522c?logo=prometheus&logoColor=white) - Coleta de métricas
-- ![Grafana](https://img.shields.io/badge/Grafana-9.1.0-f46800?logo=grafana&logoColor=white) - Dashboards e visualizações
+- ![Jaeger](https://img.shields.io/badge/Jaeger-1.51-66d9ef?logo=jaeger&logoColor=white) - Distributed tracing + SPM
+- ![Prometheus](https://img.shields.io/badge/Prometheus-v2.45-e6522c?logo=prometheus&logoColor=white) - Coleta de métricas
+- ![Grafana](https://img.shields.io/badge/Grafana-10.0-f46800?logo=grafana&logoColor=white) - Dashboards e visualizações
+- ![Alertmanager](https://img.shields.io/badge/Alertmanager-0.25-e6522c?logo=prometheus&logoColor=white) - Gestão de alertas
 
 ### 🐳 **CONTAINERIZAÇÃO & DEPLOY**
 - ![Docker](https://img.shields.io/badge/Docker-latest-2496ed?logo=docker&logoColor=white) - Containerização de aplicações
@@ -247,16 +313,18 @@ rate(calls_total{status_code=~"5.."}[5m]) / rate(calls_total[5m])
 
 ### 📊 **RESUMO POR CATEGORIA:**
 
-| **Categoria**         | **Tecnologias Principais**                    |
-| --------------------- | --------------------------------------------- |
-| **🎨 Frontend**        | React + TypeScript + Tailwind + Vite          |
-| **⚙️ Backend**         | FastAPI + Python + PostgreSQL + Redis         |
-| **🤖 IA**              | Google Gemini AI                              |
-| **📊 Observabilidade** | OpenTelemetry + Jaeger + Prometheus + Grafana |
-| **🐳 Containerização** | Docker + Docker Compose + Nginx               |
-| **☸️ Deploy**          | Kubernetes + Helm (opcional)                  |
+| **Categoria**         | **Tecnologias Principais**                        |
+| --------------------- | ------------------------------------------------- |
+| **🎨 Frontend**        | React + TypeScript + Tailwind + Vite              |
+| **⚙️ Backend**         | FastAPI + Python + PostgreSQL + Redis             |
+| **🤖 IA**              | Google Gemini AI                                  |
+| **📊 Observabilidade** | OpenTelemetry + Jaeger SPM + Prometheus + Grafana |
+| **🚨 Alertas**         | Alertmanager + 55+ regras de alerta               |
+| **🐳 Containerização** | Docker + Docker Compose + Nginx                   |
+| **☸️ Deploy**          | Kubernetes + Helm (opcional)                      |
+| **🔒 Segurança**       | Scripts de validação + Credenciais seguras        |
 
-**Total: 30+ tecnologias** integradas em uma aplicação completa de fintech! 🚀
+**Total: 35+ tecnologias** integradas em uma aplicação completa de fintech! 🚀
 
 ---
 
@@ -318,16 +386,34 @@ pytest test_api.py      # Testes específicos
 | **Backend API**    | `curl http://localhost:8001/health`                              | http://localhost:8001/docs |
 | **PostgreSQL**     | `docker exec -it fintelli_db psql -U finance_user -d finance_db` | -                          |
 | **Redis**          | `docker exec -it fintelli_cache redis-cli`                       | -                          |
-| **Prometheus**     | `curl http://localhost:9091/api/v1/query?query=up`               | http://localhost:9091      |
-| **Jaeger**         | `curl http://localhost:16687/api/services`                       | http://localhost:16687     |
-| **OTel Collector** | `curl http://localhost:8889/metrics`                             | -                          |
+| **Prometheus**     | `curl http://localhost:9090/api/v1/query?query=up`               | http://localhost:9090      |
+| **Jaeger**         | `curl http://localhost:16686/api/services`                       | http://localhost:16686     |
 | **Grafana**        | `curl http://localhost:3000`                                     | http://localhost:3000      |
+| **Alertmanager**   | `curl http://localhost:9093/api/v1/status`                       | http://localhost:9093      |
+| **OTel Collector** | `curl http://localhost:8889/metrics`                             | -                          |
+
+### 🛡️ Validação de Segurança
+
+```bash
+# Verificar configurações de segurança
+./scripts/security_check.sh
+
+# Validar credenciais e ambiente
+./scripts/validate_spm.sh
+
+# Gerar novas credenciais seguras
+./scripts/generate_secrets.sh
+```
 
 ### 📖 Documentação Completa
 
+- **[CHANGELOG](CHANGELOG.md)** - Histórico completo da versão 1.0.0
 - **[Guia de Testes](tests/README.md)** - Documentação detalhada de todos os testes
 - **[E-book Completo](docs/EBOOK_TECNOLOGIAS_FINTELLI.md)** - Guia técnico abrangente
+- **[Guia SPM](docs/SPM_USER_GUIDE.md)** - Service Performance Monitoring
 - **[Guia de Validações](docs/TESTING_GUIDE.md)** - Procedimentos de validação
+- **[Recomendações de Segurança](docs/SECURITY_RECOMMENDATIONS.md)** - Boas práticas
+- **[Resumo da Implementação](docs/IMPLEMENTACAO_COMPLETA_RESUMO.md)** - Visão executiva
 
 ### 🎯 Qualidade Garantida
 
@@ -338,6 +424,78 @@ pytest test_api.py      # Testes específicos
 - ✅ **Observability Tests**: Métricas e traces
 - ✅ **Docker Tests**: Containers e networking
 - ✅ **Security Tests**: Validações de segurança básicas
+- ✅ **SPM Tests**: Service Performance Monitoring
+- ✅ **Alert Tests**: Validação de regras de alerta
+
+## 📋 **Alertas e Monitoramento Avançado**
+
+### 🚨 Sistema de Alertas
+
+O Fintelli possui **55+ regras de alerta** categorizadas para monitoramento completo:
+
+#### 📊 **Categorias de Alertas**
+- **🏢 Negócio**: Volume de transações, taxas de conversão, SLA
+- **🔒 Segurança**: Tentativas de acesso, anomalias, compliance
+- **🛡️ Compliance**: Auditoria, retenção de dados, regulamentações
+- **🖥️ Infraestrutura**: CPU, memória, disco, rede, containers
+
+#### ⚙️ **Configuração de Alertas**
+
+```bash
+# Configurações de alerta
+config/spm-alerts.yml              # Regras SPM específicas
+config/fintelli-enhanced-alerts.yml # Regras avançadas de negócio
+config/alertmanager.yml           # Configuração do Alertmanager
+
+# Testar alertas
+curl -X POST http://localhost:9093/api/v1/alerts
+```
+
+#### 📈 **Dashboards Inclusos**
+- **Dashboard SPM**: Métricas de performance por serviço
+- **Métricas de Sistema**: CPU, memória, rede
+- **Métricas de Negócio**: Transações, conversões
+- **Alertas Ativos**: Status e histórico de alertas
+
+## 🔒 **Segurança e Boas Práticas**
+
+### 🛡️ **Recursos de Segurança**
+
+- **🔐 Geração Automática de Credenciais**: Script `generate_secrets.sh`
+- **🔍 Auditoria de Segurança**: Script `security_check.sh`
+- **📝 Recomendações Documentadas**: `docs/SECURITY_RECOMMENDATIONS.md`
+- **🚨 Alertas de Segurança**: Monitoramento de tentativas de acesso
+- **🔄 Rotação de Credenciais**: Procedimentos documentados
+
+### 📋 **Checklist de Segurança**
+
+```bash
+# Executar auditoria completa
+./scripts/security_check.sh
+
+# Gerar credenciais seguras
+./scripts/generate_secrets.sh
+
+# Validar configurações
+./scripts/validate_spm.sh
+```
+
+---
+
+## 🎯 **Próximos Passos e Roadmap**
+
+### 🚀 **V2.0 Planejado**
+- **🤖 Machine Learning**: Detecção de anomalias com IA
+- **📱 APM Mobile**: Instrumentação React Native
+- **🔄 CI/CD Integration**: Observabilidade no pipeline
+- **🏢 Multi-tenancy**: Arquitetura SaaS
+- **📊 Advanced Analytics**: Análises preditivas
+
+### 📈 **Melhorias Contínuas**
+- **Performance**: Otimização de latência < 100ms P95
+- **Escalabilidade**: Suporte a milhões de transações
+- **Compliance**: Certificações PCI-DSS, SOX
+- **Integração**: APIs de terceiros (bancos, fintechs)
 
 ---
 

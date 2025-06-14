@@ -1,27 +1,7 @@
 services:
   # Serviço de Backend (API com FastAPI)
   backend:
-  # 2. Jaeger para Traces com SPM habilitado
-  jaeger:
-    image: jaegertracing/all-in-one:1.51
-    container_name: fintelli_jaeger
-    environment:
-      # Configurações básicas do Jaeger
-      - JAEGER_DISABLED=false
-      - COLLECTOR_OTLP_ENABLED=true
-      # Habilita endpoint de métricas administrativas
-      - JAEGER_ADMIN_HTTP_HOST_PORT=:14269
-      # Configurações de storage
-      - SPAN_STORAGE_TYPE=memory
-      # Configuração OTLP para usar porta diferente
-      - COLLECTOR_OTLP_GRPC_HOST_PORT=:4319
-    ports:
-      - "16687:16686" # UI do Jaeger
-      - "14251:14250" # Coleta de traces
-      - "14269:14269" # Admin port para métricas
-      - "4319:4319"   # OTLP gRPC para traces
-    depends_on:
-      - otel-collectorckend
+    build: ./src/backend
     container_name: fintelli_backend
     env_file:
       - ./.env
@@ -78,7 +58,7 @@ services:
     ports:
       - "4317:4317"  # OTLP gRPC
       - "4318:4318"  # OTLP HTTP
-      - "8888:8889"  # Prometheus exporter (SPM incluído)
+      - "8889:8889"  # Prometheus exporter (SPM incluído)
 
   # 2. Jaeger para Traces com SPM habilitado
   jaeger:
@@ -94,6 +74,9 @@ services:
       - SPAN_STORAGE_TYPE=memory
       # Configuração OTLP para usar porta diferente
       - COLLECTOR_OTLP_GRPC_HOST_PORT=:4319
+      # Desabilita forwarding de traces
+      - JAEGER_REPORTER_LOG_SPANS=false
+      - JAEGER_ENDPOINT=
     ports:
       - "16687:16686" # UI do Jaeger
       - "14251:14250" # Coleta de traces
@@ -112,10 +95,10 @@ services:
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
-      - '--alertmanager.url=http://alertmanager:9093'
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./config/spm-alerts.yml:/etc/prometheus/spm-alerts.yml
+      - ./config/fintelli-enhanced-alerts.yml:/etc/prometheus/fintelli-enhanced-alerts.yml
     ports:
       - "9091:9090"
     depends_on:

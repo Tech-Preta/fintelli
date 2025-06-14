@@ -1,0 +1,344 @@
+# Alertas Aprimorados para Fintelli - Sistema Financeiro
+# Arquivo: config/fintelli-enhanced-alerts.yml
+
+groups:
+  # ==========================================
+  # ALERTAS DE NEGÓCIO ESPECÍFICOS FINTECH
+  # ==========================================
+  - name: fintelli-business-alerts
+    rules:
+      # Alertas relacionados a transações financeiras
+      - alert: HighTransactionFailureRate
+        expr: |
+          (
+            increase(transactions_created_total[5m]) == 0 AND
+            rate(calls_total{http_route="/api/transactions", http_status_code!="201"}[5m]) > 0
+          ) OR (
+            (rate(calls_total{http_route="/api/transactions", http_status_code!="201"}[5m]) /
+             rate(calls_total{http_route="/api/transactions"}[5m])) * 100 > 5
+          )
+        for: 2m
+        labels:
+          severity: critical
+          service: fintelli-backend
+          category: business
+          business_impact: high
+        annotations:
+          summary: "Taxa alta de falhas em transações financeiras ({{ $value | humanizePercentage }})"
+          description: |
+            🏦 ALERTA CRÍTICO FINANCEIRO 🏦
+
+            Taxa de falhas em transações está em {{ $value | humanizePercentage }}.
+            Isso pode impactar diretamente a receita e a experiência do usuário.
+          business_impact: "Perda potencial de receita e insatisfação do cliente"
+          recommended_actions: |
+            1. Verificar logs de erro nas transações
+            2. Validar conexão com banco de dados
+            3. Verificar se há problemas de validação
+            4. Contatar equipe de produto se persistir
+          runbook_url: "https://wiki.fintelli.com/runbooks/transaction-failures"
+
+      - alert: UnusualTransactionVolume
+        expr: |
+          abs(
+            rate(transactions_created_total[5m]) - 
+            rate(transactions_created_total[5m] offset 1h)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: business
+          business_impact: medium
+        annotations:
+          summary: "Volume de transações incomum detectado"
+          description: |
+            Volume de transações mudou significativamente comparado a 1h atrás.
+            Atual: {{ $value | humanize }} transações/min
+
+            Pode indicar:
+            - Pico de uso legítimo
+            - Problema no sistema
+            - Atividade suspeita
+          business_impact: "Possível impacto na capacidade ou segurança"
+
+      - alert: LargeTransactionAnomaly
+        expr: |
+          increase(transaction_amount_bucket{le="10000"}[5m]) == 0 AND 
+          increase(transaction_amount_bucket[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: business
+          business_impact: high
+        annotations:
+          summary: "Transações de valores muito altos detectadas"
+          description: |
+            💰 Transações com valores acima de R$ 10.000 foram detectadas.
+
+            Ações recomendadas:
+            - Verificar se são transações legítimas
+            - Revisar controles de compliance
+            - Validar limites de transação
+          business_impact: "Risco de compliance e segurança financeira"
+
+  # ==========================================
+  # ALERTAS DE SEGURANÇA FINTECH
+  # ==========================================
+  - name: fintelli-security-alerts
+    rules:
+      - alert: SuspiciousAPIActivity
+        expr: |
+          rate(calls_total{service_name="fintelli-backend"}[1m]) > 50
+        for: 30s
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: security
+          security_impact: medium
+        annotations:
+          summary: "Atividade suspeita de API detectada ({{ $value | humanize }} req/s)"
+          description: |
+            🔒 ALERTA DE SEGURANÇA 🔒
+
+            Taxa de requisições muito alta: {{ $value | humanize }} req/s
+            Pode indicar:
+            - Ataque DDoS
+            - Bot automatizado
+            - Tentativa de exploração
+          action_required: |
+            1. Analisar logs de acesso
+            2. Verificar IPs de origem
+            3. Considerar ativar rate limiting
+            4. Monitorar patterns de acesso
+
+      - alert: AuthenticationAnomalies
+        expr: |
+          rate(calls_total{http_status_code="401"}[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: security
+          security_impact: high
+        annotations:
+          summary: "Taxa alta de falhas de autenticação"
+          description: |
+            🚨 POSSÍVEL TENTATIVA DE INVASÃO 🚨
+
+            Múltiplas tentativas de acesso não autorizado detectadas.
+            Taxa: {{ $value | humanize }} tentativas/s
+
+            Pode indicar:
+            - Ataque de força bruta
+            - Credenciais comprometidas
+            - Erro de configuração
+          action_required: |
+            1. Verificar logs de autenticação
+            2. Analisar IPs suspeitos
+            3. Considerar bloqueio temporário
+            4. Notificar equipe de segurança
+
+      - alert: DataBreachIndicators
+        expr: |
+          rate(calls_total{http_route=~".*user.*|.*account.*|.*profile.*", http_status_code="403"}[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          service: fintelli-backend
+          category: security
+          security_impact: critical
+        annotations:
+          summary: "Possíveis indicadores de violação de dados"
+          description: |
+            🚨 ALERTA CRÍTICO DE SEGURANÇA 🚨
+
+            Tentativas de acesso não autorizado a dados sensíveis detectadas.
+
+            AÇÃO IMEDIATA REQUERIDA:
+            1. Investigar logs imediatamente
+            2. Verificar integridade dos dados
+            3. Ativar protocolo de incident response
+            4. Considerar notificação regulatória se confirmado
+
+  # ==========================================
+  # ALERTAS DE INFRAESTRUTURA CRÍTICA
+  # ==========================================
+  - name: fintelli-infrastructure-alerts
+    rules:
+      - alert: DatabaseConnectionExhaustion
+        expr: |
+          active_db_connections > 80
+        for: 2m
+        labels:
+          severity: critical
+          service: postgres
+          category: infrastructure
+          business_impact: critical
+        annotations:
+          summary: "Pool de conexões do banco quase esgotado ({{ $value }})"
+          description: |
+            🗄️ CONEXÕES DE BANCO CRÍTICAS 🗄️
+
+            Número de conexões ativas: {{ $value }}
+            Limite típico: ~100 conexões
+
+            Risco de:
+            - Rejeição de novas transações
+            - Timeout de operações
+            - Indisponibilidade do sistema
+          recommended_actions: |
+            1. Investigar connection leaks
+            2. Verificar queries de longa duração
+            3. Considerar aumentar pool temporariamente
+            4. Analisar padrões de acesso
+
+      - alert: CacheMemoryHigh
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 3m
+        labels:
+          severity: warning
+          service: redis
+          category: infrastructure
+          business_impact: medium
+        annotations:
+          summary: "Uso de memória do Redis muito alto ({{ $value | humanizePercentage }})"
+          description: |
+            💾 MEMÓRIA DO CACHE ALTA 💾
+
+            Uso atual: {{ $value | humanizePercentage }}
+
+            Pode causar:
+            - Lentidão nas operações
+            - Eviction de dados importantes
+            - Falhas de cache
+          recommended_actions: |
+            1. Analisar keys com TTL expirado
+            2. Verificar tamanho de objetos grandes
+            3. Considerar limpeza manual
+            4. Planejar aumento de memória
+
+      - alert: DiskSpaceRunningOut
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: critical
+          service: host
+          category: infrastructure
+          business_impact: critical
+        annotations:
+          summary: "Espaço em disco criticamente baixo ({{ $value | humanizePercentage }} livre)"
+          description: |
+            💿 ESPAÇO EM DISCO CRÍTICO 💿
+
+            Espaço livre: {{ $value | humanizePercentage }}
+
+            AÇÃO URGENTE:
+            - Sistema pode parar de funcionar
+            - Logs podem parar de ser escritos
+            - Banco de dados pode corromper
+
+  # ==========================================
+  # ALERTAS DE COMPLIANCE E AUDITORIA
+  # ==========================================
+  - name: fintelli-compliance-alerts
+    rules:
+      - alert: AuditLogFailure
+        expr: |
+          absent_over_time(up{job="audit-logs"}[5m])
+        for: 1m
+        labels:
+          severity: critical
+          service: audit-system
+          category: compliance
+          compliance_impact: critical
+        annotations:
+          summary: "Sistema de auditoria indisponível"
+          description: |
+            📋 FALHA CRÍTICA DE AUDITORIA 📋
+
+            Sistema de logs de auditoria não está respondendo.
+
+            IMPACTO REGULATÓRIO:
+            - Violação de requisitos de compliance
+            - Risco de multas regulatórias
+            - Problemas em auditoria externa
+
+            AÇÃO IMEDIATA:
+            1. Restaurar sistema de auditoria
+            2. Verificar integridade dos logs
+            3. Documentar período de indisponibilidade
+            4. Notificar compliance officer
+
+      - alert: SuspiciousTransactionPattern
+        expr: |
+          (
+            rate(transactions_created_total{type="expense"}[10m]) /
+            rate(transactions_created_total[10m])
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: fintelli-backend
+          category: compliance
+          compliance_impact: medium
+        annotations:
+          summary: "Padrão suspeito: alta concentração de despesas"
+          description: |
+            🕵️ PADRÃO TRANSACIONAL SUSPEITO 🕵️
+
+            {{ $value | humanizePercentage }} das transações são despesas.
+
+            Pode indicar:
+            - Lavagem de dinheiro
+            - Uso indevido da plataforma
+            - Erro no sistema
+
+            Requer investigação manual.
+
+  # ==========================================
+  # RECORDING RULES APRIMORADAS
+  # ==========================================
+  - name: fintelli-slos-recording-rules
+    rules:
+      # SLO de disponibilidade (99.9% em 30 dias)
+      - record: fintelli:availability_30d
+        expr: |
+          (
+            1 - (
+              increase(calls_total{service_name="fintelli-backend",status_code=~"5.."}[30d]) /
+              increase(calls_total{service_name="fintelli-backend"}[30d])
+            )
+          ) * 100
+
+      # SLO de latência (95% das requisições < 500ms)
+      - record: fintelli:latency_slo_30d
+        expr: |
+          (
+            increase(duration_bucket{service_name="fintelli-backend",le="0.5"}[30d]) /
+            increase(duration_bucket{service_name="fintelli-backend",le="+Inf"}[30d])
+          ) * 100
+
+      # Taxa de sucesso em transações de negócio
+      - record: fintelli:transaction_success_rate_24h
+        expr: |
+          (
+            increase(transactions_created_total[24h]) /
+            increase(calls_total{http_route="/api/transactions",http_method="POST"}[24h])
+          ) * 100
+
+      # Volume financeiro processado por hora
+      - record: fintelli:financial_volume_1h
+        expr: |
+          sum(increase(transaction_amount[1h]))
+
+      # Receita vs Despesas (últimas 24h)
+      - record: fintelli:revenue_ratio_24h
+        expr: |
+          (
+            sum(increase(transaction_amount{type="income"}[24h])) /
+            abs(sum(increase(transaction_amount{type="expense"}[24h])))
+          )
