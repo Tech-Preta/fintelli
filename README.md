@@ -162,3 +162,68 @@ Adicione e remova algumas transações para gerar dados.
 3. Vá em "Dashboards" > "New dashboard" para criar painéis com as métricas disponíveis
    - Exemplos: `http_server_duration_seconds`, `transactions_created_total`
 
+## 🛠️ Tecnologias Utilizadas
+
+### 🎯 **FRONTEND**
+#### **Framework & Biblioteca Principal**
+- ![React](https://img.shields.io/badge/React-18.2.0-61dafb?logo=react&logoColor=white) - Biblioteca para interfaces de usuário
+- ![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-3178c6?logo=typescript&logoColor=white) - Superset do JavaScript com tipagem estática
+- ![Vite](https://img.shields.io/badge/Vite-6.3.5-646cff?logo=vite&logoColor=white) - Build tool e bundler moderno
+
+#### **UI & Estilização**
+- ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.5-06b6d4?logo=tailwindcss&logoColor=white) - Framework CSS utility-first
+- ![PostCSS](https://img.shields.io/badge/PostCSS-8.4.31-dd3a0a?logo=postcss&logoColor=white) - Processador CSS
+- ![React Icons](https://img.shields.io/badge/React_Icons-5.5.0-e91e63?logo=react&logoColor=white) - Biblioteca de ícones
+
+#### **Gráficos & HTTP**
+- ![Chart.js](https://img.shields.io/badge/Chart.js-4.4.0-ff6384?logo=chartdotjs&logoColor=white) - Biblioteca de gráficos
+- ![Axios](https://img.shields.io/badge/Axios-1.6.0-5a29e4?logo=axios&logoColor=white) - Cliente HTTP para chamadas de API
+
+### 🔧 **BACKEND**
+#### **Framework & Runtime**
+- ![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi&logoColor=white) - Framework web moderno para Python
+- ![Python](https://img.shields.io/badge/Python-latest-3776ab?logo=python&logoColor=white) - Linguagem de programação principal
+- ![Uvicorn](https://img.shields.io/badge/Uvicorn-standard-499848?logo=uvicorn&logoColor=white) - Servidor ASGI de alta performance
+
+#### **Banco de Dados & Cache**
+- ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-336791?logo=postgresql&logoColor=white) - Banco de dados relacional
+- ![Redis](https://img.shields.io/badge/Redis-7-dc382d?logo=redis&logoColor=white) - Cache em memória e broker de mensagens
+
+#### **Inteligência Artificial**
+- ![Google AI](https://img.shields.io/badge/Google_Gemini-AI-4285f4?logo=google&logoColor=white) - API do Gemini para análise de documentos
+
+### 📊 **OBSERVABILIDADE & MONITORAMENTO**
+#### **OpenTelemetry Stack**
+- ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-latest-425cc7?logo=opentelemetry&logoColor=white) - Observabilidade unificada
+- ![Jaeger](https://img.shields.io/badge/Jaeger-1.38-66d9ef?logo=jaeger&logoColor=white) - Distributed tracing
+- ![Prometheus](https://img.shields.io/badge/Prometheus-v2.37.0-e6522c?logo=prometheus&logoColor=white) - Coleta de métricas
+- ![Grafana](https://img.shields.io/badge/Grafana-9.1.0-f46800?logo=grafana&logoColor=white) - Dashboards e visualizações
+
+### 🐳 **CONTAINERIZAÇÃO & DEPLOY**
+- ![Docker](https://img.shields.io/badge/Docker-latest-2496ed?logo=docker&logoColor=white) - Containerização de aplicações
+- ![Docker Compose](https://img.shields.io/badge/Docker_Compose-latest-2496ed?logo=docker&logoColor=white) - Orquestração de múltiplos containers
+- ![Nginx](https://img.shields.io/badge/Nginx-1.21.3-009639?logo=nginx&logoColor=white) - Servidor web e proxy reverso
+
+### ☸️ **KUBERNETES (OPCIONAL)**
+- ![Kubernetes](https://img.shields.io/badge/Kubernetes-latest-326ce5?logo=kubernetes&logoColor=white) - Orquestração de containers
+- ![Helm](https://img.shields.io/badge/Helm-latest-0f1689?logo=helm&logoColor=white) - Gerenciador de pacotes Kubernetes
+
+### 🔐 **SEGURANÇA & CONFIGURAÇÃO**
+- ![Environment Variables](https://img.shields.io/badge/Environment_Variables-Security-green) - Configuração segura
+- ![CORS](https://img.shields.io/badge/CORS-Enabled-blue) - Cross-Origin Resource Sharing
+
+---
+
+### 📊 **RESUMO POR CATEGORIA:**
+
+| **Categoria**         | **Tecnologias Principais**                    |
+| --------------------- | --------------------------------------------- |
+| **🎨 Frontend**        | React + TypeScript + Tailwind + Vite          |
+| **⚙️ Backend**         | FastAPI + Python + PostgreSQL + Redis         |
+| **🤖 IA**              | Google Gemini AI                              |
+| **📊 Observabilidade** | OpenTelemetry + Jaeger + Prometheus + Grafana |
+| **🐳 Containerização** | Docker + Docker Compose + Nginx               |
+| **☸️ Deploy**          | Kubernetes + Helm (opcional)                  |
+
+**Total: 30+ tecnologias** integradas em uma aplicação completa de fintech! 🚀
+
