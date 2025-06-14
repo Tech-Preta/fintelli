@@ -227,3 +227,86 @@ Adicione e remova algumas transações para gerar dados.
 
 **Total: 30+ tecnologias** integradas em uma aplicação completa de fintech! 🚀
 
+---
+
+## 🧪 Testes e Validações
+
+O Fintelli possui uma suíte completa de testes automatizados que garante a qualidade e confiabilidade do sistema.
+
+### 🚀 Execução Rápida de Todos os Testes
+
+```bash
+# Executar TODOS os testes (frontend + backend + integração)
+./run_all_tests.sh
+
+# Execução rápida (para no primeiro erro)
+./run_all_tests.sh --quick
+
+# Apenas testes específicos
+./run_all_tests.sh --skip-frontend    # Apenas backend e integração
+./run_all_tests.sh --skip-backend     # Apenas frontend e integração
+./run_all_tests.sh --skip-integration # Apenas unit tests
+```
+
+### 📋 Tipos de Testes Disponíveis
+
+#### 🎨 **Testes de Frontend**
+```bash
+cd tests/frontend
+npm install
+npm test                # Todos os testes
+npm run test:coverage   # Com relatório de coverage
+npm run test:e2e        # Testes end-to-end (Cypress)
+```
+
+**Cobertura**: Componentes React, utilitários JavaScript, integração com APIs
+
+#### ⚙️ **Testes de Backend**
+```bash
+cd tests/backend
+pip install -r requirements.txt
+pytest                  # Todos os testes
+pytest --cov=app        # Com coverage
+pytest test_api.py      # Testes específicos
+```
+
+**Cobertura**: APIs FastAPI, PostgreSQL, Redis, Prometheus, Jaeger, OpenTelemetry
+
+#### 🔗 **Testes de Integração**
+```bash
+./tests/integration/run_tests.sh
+```
+
+**Cobertura**: Docker Compose, networking, endpoints, observabilidade, logs
+
+### 📊 Validações por Componente
+
+| Componente         | Comando                                                          | URL de Verificação         |
+| ------------------ | ---------------------------------------------------------------- | -------------------------- |
+| **Frontend**       | `curl http://localhost:8080`                                     | http://localhost:8080      |
+| **Backend API**    | `curl http://localhost:8001/health`                              | http://localhost:8001/docs |
+| **PostgreSQL**     | `docker exec -it fintelli_db psql -U finance_user -d finance_db` | -                          |
+| **Redis**          | `docker exec -it fintelli_cache redis-cli`                       | -                          |
+| **Prometheus**     | `curl http://localhost:9091/api/v1/query?query=up`               | http://localhost:9091      |
+| **Jaeger**         | `curl http://localhost:16687/api/services`                       | http://localhost:16687     |
+| **OTel Collector** | `curl http://localhost:8889/metrics`                             | -                          |
+| **Grafana**        | `curl http://localhost:3000`                                     | http://localhost:3000      |
+
+### 📖 Documentação Completa
+
+- **[Guia de Testes](tests/README.md)** - Documentação detalhada de todos os testes
+- **[E-book Completo](docs/EBOOK_TECNOLOGIAS_FINTELLI.md)** - Guia técnico abrangente
+- **[Guia de Validações](docs/TESTING_GUIDE.md)** - Procedimentos de validação
+
+### 🎯 Qualidade Garantida
+
+- ✅ **Unit Tests**: Jest (Frontend) + Pytest (Backend)
+- ✅ **Integration Tests**: APIs, banco de dados, cache
+- ✅ **End-to-End Tests**: Fluxo completo da aplicação
+- ✅ **Performance Tests**: Latência e throughput
+- ✅ **Observability Tests**: Métricas e traces
+- ✅ **Docker Tests**: Containers e networking
+- ✅ **Security Tests**: Validações de segurança básicas
+
+---
+
