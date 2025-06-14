@@ -1,0 +1,168 @@
+# Configuração do Alertmanager para Fintelli
+# Arquivo: config/alertmanager.yml
+
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@fintelli.com'
+  smtp_auth_username: 'alertmanager@fintelli.com'
+  smtp_auth_password: 'password'
+
+# Configuração de templates customizados
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Rota principal para processamento de alertas
+route:
+  group_by: ['alertname', 'service', 'severity']
+  group_wait: 10s      # Tempo para aguardar alertas similares
+  group_interval: 10s  # Tempo entre reenvios do mesmo grupo
+  repeat_interval: 1h  # Tempo para repetir alertas não resolvidos
+  receiver: 'default-receiver'
+  
+  # Rotas específicas por severidade e tipo
+  routes:
+    # Alertas críticos - notificação imediata
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 15m
+      
+    # Alertas de SLA - equipe de produto
+    - match:
+        sla_impact: critical
+      receiver: 'sla-alerts'
+      group_wait: 30s
+      repeat_interval: 30m
+      
+    # Alertas de segurança - equipe de segurança
+    - match:
+        category: security
+      receiver: 'security-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+      
+    # Alertas de infraestrutura - equipe de infra
+    - match_re:
+        service: '(postgres|redis|nginx)'
+      receiver: 'infra-alerts'
+      
+    # Alertas de negócio/financeiros - equipe de produto
+    - match:
+        category: business
+      receiver: 'business-alerts'
+      group_wait: 1m
+      repeat_interval: 2h
+
+# Inibição de alertas redundantes
+inhibit_rules:
+  # Se crítico está ativo, silencia warnings do mesmo serviço
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['service', 'alertname']
+    
+  # Se sistema está down, silencia alertas de latência
+  - source_match:
+      alertname: 'ZeroThroughput'
+    target_match_re:
+      alertname: '.*Latency.*'
+    equal: ['service']
+
+# Configuração de receptores/notificações
+receivers:
+  # Receptor padrão - logs apenas
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://localhost:8080/webhook/default'
+        send_resolved: true
+        
+  # Alertas críticos - múltiplos canais
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'sre-team@fintelli.com,on-call@fintelli.com'
+        subject: '🚨 [CRÍTICO] {{ .GroupLabels.alertname }} - {{ .GroupLabels.service }}'
+        body: |
+          🚨 ALERTA CRÍTICO DETECTADO 🚨
+          
+          Serviço: {{ .GroupLabels.service }}
+          Alerta: {{ .GroupLabels.alertname }}
+          Severidade: {{ .GroupLabels.severity }}
+          
+          Detalhes:
+          {{ range .Alerts }}
+          - {{ .Annotations.summary }}
+            Valor: {{ .ValueString }}
+            Desde: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+          
+          🔗 Runbook: {{ .Alerts.0.Annotations.runbook_url }}
+          📊 Dashboard: {{ .Alerts.0.Annotations.dashboard_url }}
+          
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: '🚨 Alerta Crítico - {{ .GroupLabels.service }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: 'danger'
+        
+    webhook_configs:
+      - url: 'http://localhost:8080/webhook/critical'
+        send_resolved: true
+        
+  # Alertas de SLA
+  - name: 'sla-alerts'
+    email_configs:
+      - to: 'product-team@fintelli.com,management@fintelli.com'
+        subject: '⚠️ [SLA] Violação de SLA - {{ .GroupLabels.service }}'
+        body: |
+          ⚠️ VIOLAÇÃO DE SLA DETECTADA ⚠️
+          
+          Serviço: {{ .GroupLabels.service }}
+          Impacto no SLA: {{ .GroupLabels.sla_impact }}
+          
+          {{ range .Alerts }}
+          - {{ .Annotations.summary }}
+            Descrição: {{ .Annotations.description }}
+          {{ end }}
+          
+  # Alertas de segurança
+  - name: 'security-alerts'
+    email_configs:
+      - to: 'security-team@fintelli.com,ciso@fintelli.com'
+        subject: '🛡️ [SEGURANÇA] {{ .GroupLabels.alertname }}'
+        body: |
+          🛡️ ALERTA DE SEGURANÇA 🛡️
+          
+          Tipo: {{ .GroupLabels.alertname }}
+          Serviço: {{ .GroupLabels.service }}
+          
+          {{ range .Alerts }}
+          Detalhes: {{ .Annotations.description }}
+          Ação requerida: {{ .Annotations.action_required }}
+          {{ end }}
+          
+  # Alertas de infraestrutura
+  - name: 'infra-alerts'
+    email_configs:
+      - to: 'infra-team@fintelli.com'
+        subject: '🔧 [INFRA] {{ .GroupLabels.service }} - {{ .GroupLabels.alertname }}'
+        
+  # Alertas de negócio
+  - name: 'business-alerts'
+    email_configs:
+      - to: 'product-team@fintelli.com,business-team@fintelli.com'
+        subject: '💼 [NEGÓCIO] {{ .GroupLabels.alertname }}'
+        body: |
+          💼 ALERTA DE NEGÓCIO - FINTELLI 💼
+          
+          {{ range .Alerts }}
+          Métrica: {{ .Labels.alertname }}
+          Impacto: {{ .Annotations.business_impact }}
+          Valor atual: {{ .ValueString }}
+          
+          Descrição: {{ .Annotations.description }}
+          
+          Ações recomendadas: {{ .Annotations.recommended_actions }}
+          {{ end }}
