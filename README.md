@@ -6,74 +6,62 @@ Esta é uma aplicação full-stack para gerenciamento de finanças pessoais com 
 
 ```mermaid
 graph TD
-    subgraph "Ambiente Externo"
-        User[<i class="fa fa-user"></i> Utilizador via Browser]
+    subgraph "🌐 Ambiente Externo"
+        User["👤 Usuário via Browser"]
     end
 
-    subgraph "Cluster Kubernetes"
-        Ingress[<i class="fa fa-route"></i> Ingress Controller]
-
-        subgraph "Aplicações Principais"
-            direction LR
-            Frontend[<i class="fa fa-window-maximize"></i> Frontend<br>(Nginx Pods)]
-            Backend[<i class="fa fa-server"></i> Backend<br>(FastAPI Pods)]
+    subgraph "🐳 Docker Environment"
+        subgraph "📱 Frontend Layer"
+            Frontend["🌐 Frontend<br/>(React + Nginx)"]
         end
 
-        subgraph "Camada de Dados"
-            direction LR
-            Postgres[<i class="fa fa-database"></i> PostgreSQL<br>(StatefulSet)]
-            Redis[<i class="fa fa-memory"></i> Redis<br>(StatefulSet)]
+        subgraph "⚙️ Backend Layer"
+            Backend["🔧 Backend<br/>(FastAPI + Python)"]
         end
 
-        subgraph "Pilha de Observabilidade"
-            direction TB
-            OTel[<i class="fa fa-satellite-dish"></i> OTel Collector<br>(Deployment)]
+        subgraph "💾 Data Layer"
+            Postgres["🗄️ PostgreSQL<br/>(Database)"]
+            Redis["⚡ Redis<br/>(Cache)"]
+        end
+
+        subgraph "📊 Observability Stack"
+            OTel["📡 OTel Collector<br/>(Telemetry)"]
             
-            subgraph "Visualização"
-                direction LR
-                Jaeger[<i class="fa fa-search-plus"></i> Jaeger<br>(Traces)]
-                Grafana[<i class="fa fa-chart-bar"></i> Grafana<br>(Dashboards)]
+            subgraph "📈 Monitoring"
+                Jaeger["🔍 Jaeger<br/>(Traces)"]
+                Grafana["📊 Grafana<br/>(Dashboards)"]
+                Prometheus["📈 Prometheus<br/>(Metrics)"]
             end
-            
-            Prometheus[<i class="fa fa-tachometer-alt"></i> Prometheus<br>(Métricas)]
         end
-
-        Secrets[<i class="fa fa-key"></i> Kubernetes Secrets<br>(Postgres & Gemini API Key)]
     end
 
-    %% Ligações de Tráfego Principal
-    User -- HTTPS Request --> Ingress
-    Ingress -- Encaminhamento de Tráfego<br>finance.local --> Frontend
-    Ingress -- /api/* --> Backend
-
-    %% Interações Internas da Aplicação
-    Frontend -- "API Calls<br>(/api)" --> Backend
-    Backend -- "Leitura/Escrita" --> Postgres
-    Backend -- "Cache" --> Redis
-    Secrets -- "Injeta Senhas e Chaves" --> Backend
-    Secrets -- "Injeta Senha" --> Postgres
-
-    %% Fluxo de Telemetria (OpenTelemetry)
-    Frontend -.-> |"OTel Traces (HTTP)"| Ingress
-    Ingress -.-> |"/v1/traces"| OTel
-    Backend  -.-> |"OTel Traces & Métricas (gRPC)"| OTel
+    %% User Flow
+    User -->|HTTP Request| Frontend
+    Frontend -->|API Calls| Backend
     
-    OTel -- "Exporta Traces" --> Jaeger
-    Prometheus -- "Recolhe Métricas" --> OTel
-    Grafana -- "Consulta Métricas" --> Prometheus
+    %% Data Flow
+    Backend -->|Read/Write| Postgres
+    Backend -->|Cache| Redis
+    
+    %% Telemetry Flow
+    Frontend -.->|Traces| OTel
+    Backend -.->|Traces & Metrics| OTel
+    OTel -->|Export Traces| Jaeger
+    OTel -->|Export Metrics| Prometheus
+    Grafana -->|Query| Prometheus
 
-    %% Estilos
-    style User fill:#cde4ff,stroke:#66aaff,stroke-width:2px
-    style Ingress fill:#fff2cc,stroke:#ffd966,stroke-width:2px
-    style Frontend fill:#d5e8d4,stroke:#82b366,stroke-width:2px
-    style Backend fill:#d5e8d4,stroke:#82b366,stroke-width:2px
-    style Postgres fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
-    style Redis fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
-    style Secrets fill:#f8cecc,stroke:#b85450,stroke-width:2px
-    style OTel fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
-    style Jaeger fill:#f5f5f5,stroke:#666,stroke-width:1px
-    style Prometheus fill:#f5f5f5,stroke:#666,stroke-width:1px
-    style Grafana fill:#f5f5f5,stroke:#666,stroke-width:1px
+    %% Styles
+    classDef userStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef frontendStyle fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef backendStyle fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef dataStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef obsStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class User userStyle
+    class Frontend frontendStyle
+    class Backend backendStyle
+    class Postgres,Redis dataStyle
+    class OTel,Jaeger,Grafana,Prometheus obsStyle
 ```
 
 ## 📋 Arquitetura
